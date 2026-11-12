@@ -15,7 +15,8 @@ const { aiEnabled, aiInfo, analyze, feedback, interviewTurn, interviewReport, Ai
 const { basicFeedback, basicTurn, basicReport } = await import('./lib/basic.js');
 const { fetchSource } = await import('./lib/fetch-source.js');
 const { ttsAvailable, synthesize } = await import('./lib/tts.js');
-const { settingsStatus, saveProvider, setActive, deleteKey, KeyError } = await import('./lib/settings.js');
+const { settingsStatus, verifyOnly, KeyError } = await import('./lib/settings.js');
+const { requestConfig, parseConfigHeader } = await import('./lib/providers.js');
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC = path.join(ROOT, 'public');
@@ -85,28 +86,14 @@ function serveStatic(req, res) {
 /* API                                                                 */
 /* ------------------------------------------------------------------ */
 
-/** API 키 설정은 이 컴퓨터에서 연 화면에서만 바꿀 수 있다 (다른 기기·다른 사이트 차단) */
-function assertLocalRequest(req) {
-  const ip = req.socket.remoteAddress || '';
-  const local = ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
-  const origin = req.headers.origin;
-  const sameOrigin = !origin || origin === `http://${req.headers.host}`;
-  const json = (req.headers['content-type'] || '').startsWith('application/json');
-  if (!local || !sameOrigin || (req.method !== 'GET' && !json)) {
-    throw Object.assign(new Error('API 키 설정은 서버를 켠 컴퓨터의 브라우저에서만 바꿀 수 있어요.'), { status: 403 });
-  }
-}
-
 const routes = {
   'GET /api/status': async () => ({ ai: aiEnabled(), ...aiInfo(), tts: ttsAvailable() }),
 
   'GET /api/sample': async () => structuredClone(SAMPLE),
 
-  // AI 설정 (제공자 선택, 키·모델 저장)
+  // AI 설정: 제공자 목록(서버 공용 키 여부)과 키 확인. 키 자체는 브라우저에만 저장한다.
   'GET /api/settings': async () => settingsStatus(),
-  'POST /api/settings/provider': async (body, req) => { assertLocalRequest(req); return saveProvider(body); },
-  'POST /api/settings/active': async (body, req) => { assertLocalRequest(req); return setActive(body.id); },
-  'POST /api/settings/delete': async (body, req) => { assertLocalRequest(req); return deleteKey(body.id); },
+  'POST /api/settings/verify': async (body) => verifyOnly(body),
 
   // ① 자료 읽기 + ② 분석
   'POST /api/analyze': async (body) => {
@@ -182,12 +169,14 @@ const server = http.createServer(async (req, res) => {
 
   const handler = routes[`${req.method} ${url.pathname}`];
   if (!handler) {
-    if (url.pathname.startsWith('/api/')) return send(res, 404, { error: '없는 API예요.' });
+    if (url.pathname.startsWith('/api/')) return send(res, 404, { error: '서버가 이 기능을 모르는 옛 버전이에요. 서버를 다시 켜 주세요.', code: 'unknown_api' });
     return serveStatic(req, res);
   }
   try {
     const body = req.method === 'POST' ? await readJson(req) : {};
-    send(res, 200, await handler(body, req));
+    // 브라우저에 저장한 AI 설정(X-AI-Config)으로 이 요청만 처리한다
+    const config = parseConfigHeader(req.headers['x-ai-config']);
+    send(res, 200, await requestConfig.run(config, () => handler(body, req)));
   } catch (err) {
     if (err instanceof KeyError) return send(res, 400, { error: err.message });
     if (err instanceof AiError) return send(res, err.code === 'auth' ? 401 : err.code === 'rate' ? 429 : 502, { error: err.message, code: err.code });

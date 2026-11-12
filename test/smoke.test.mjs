@@ -85,7 +85,29 @@ test('기본 면접 결과: 답한 질문마다 결과', async () => {
   assert.equal(r.items.length, 1);
 });
 
-test('다른 사이트에서는 AI 설정을 바꿀 수 없음', async () => {
-  const res = await post('/api/settings/active', { id: 'openai' }, { Origin: 'http://evil.example' });
-  assert.equal(res.status, 403);
+test('키 확인: 다른 회사 키를 넣으면 알맞은 칸을 안내', async () => {
+  const res = await post('/api/settings/verify', { id: 'claude', key: 'AQ.fakeGoogleKeyForTest123' });
+  assert.equal(res.status, 400);
+  assert.match((await res.json()).error, /Gemini/);
+});
+
+test('브라우저가 보낸 AI 설정은 그 요청에만 쓰임', async () => {
+  const cfg = Buffer.from(JSON.stringify({ provider: 'claude', keys: { claude: 'sk-ant-test-0000000000' } })).toString('base64');
+  const withKey = await (await fetch(BASE + '/api/status', { headers: { 'X-AI-Config': cfg } })).json();
+  assert.equal(withKey.ai, true);
+  assert.equal(withKey.provider, 'claude');
+  const without = await (await fetch(BASE + '/api/status')).json();
+  assert.equal(without.ai, false);
+  const broken = await (await fetch(BASE + '/api/status', { headers: { 'X-AI-Config': '%%%not-base64' } })).json();
+  assert.equal(broken.ai, false);
+});
+
+test('서버는 키를 저장하지 않음 (설정 목록에 키가 없음)', async () => {
+  const s = await (await fetch(BASE + '/api/settings')).text();
+  assert.doesNotMatch(s, /sk-ant-[A-Za-z0-9_-]{6,}|"preview"/);
+});
+
+test('옛 서버 안내: 없는 API는 다시 켜라고 알림', async () => {
+  const r = await (await fetch(BASE + '/api/nope')).json();
+  assert.equal(r.code, 'unknown_api');
 });

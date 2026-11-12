@@ -24,12 +24,19 @@ export function toast(msg, ms = 3200) {
 
 store.setErrorHandler(() => toast('브라우저 저장 공간이 부족해요. 나의 복습 > 데이터 관리에서 오래된 프로젝트를 지워 주세요.', 6000));
 
+/** 이 브라우저에 저장한 AI 설정을 요청 헤더로 보낸다 (서버는 저장하지 않고 그 요청에만 쓴다) */
+function aiHeader() {
+  const c = store.aiConfig();
+  if (!c.provider && !Object.keys(c.keys).length) return {};
+  return { 'X-AI-Config': btoa(JSON.stringify(c)) };
+}
+
 export async function api(path, body) {
   let res;
   try {
-    res = await fetch(path, body === undefined ? {} : {
+    res = await fetch(path, body === undefined ? { headers: aiHeader() } : {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...aiHeader() },
       body: JSON.stringify(body),
     });
   } catch (_) {
@@ -37,6 +44,9 @@ export async function api(path, body) {
   }
   let data = {};
   try { data = await res.json(); } catch (_) { /* 무시 */ }
+  if (res.status === 404 && (data.code === 'unknown_api' || data.error === '없는 API예요.')) {
+    throw Object.assign(new Error('서버가 옛 버전으로 켜져 있어요. 서버 창에서 Ctrl + C를 누른 뒤 npm start로 다시 켜고 새로고침해 주세요.'), { status: 404, code: 'old_server' });
+  }
   if (!res.ok) throw Object.assign(new Error(data.error || `요청 실패 (${res.status})`), { status: res.status, code: data.code });
   return data;
 }

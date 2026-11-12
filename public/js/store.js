@@ -125,7 +125,26 @@ export function logEvent(type, projectId = null, extra = {}) {
 }
 export function events() { return state.events; }
 
+/* ---------- AI 설정 (이 브라우저에만 저장, 서버에는 저장하지 않음) ---------- */
+
+const AI_KEY = 'interview-prep.ai';
+export function aiConfig() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(AI_KEY) || '{}');
+    return { provider: raw.provider || null, keys: raw.keys || {}, models: raw.models || {} };
+  } catch (_) {
+    return { provider: null, keys: {}, models: {} };
+  }
+}
+export function setAiConfig(fn) {
+  const c = aiConfig();
+  fn(c);
+  try { localStorage.setItem(AI_KEY, JSON.stringify(c)); } catch (err) { onError(err); }
+  return c;
+}
+
 export function clearAll() {
   state = empty();
   persist();
+  try { localStorage.removeItem(AI_KEY); } catch (_) { /* 무시 */ }
 }
