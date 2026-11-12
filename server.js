@@ -16,7 +16,7 @@ const { basicFeedback, basicTurn, basicReport } = await import('./lib/basic.js')
 const { fetchSource } = await import('./lib/fetch-source.js');
 const { ttsAvailable, synthesize } = await import('./lib/tts.js');
 const { settingsStatus, verifyOnly, KeyError } = await import('./lib/settings.js');
-const { requestConfig, parseConfigHeader } = await import('./lib/providers.js');
+const { requestConfig, parseConfigHeader, ollamaReachable } = await import('./lib/providers.js');
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC = path.join(ROOT, 'public');
@@ -87,7 +87,16 @@ function serveStatic(req, res) {
 /* ------------------------------------------------------------------ */
 
 const routes = {
-  'GET /api/status': async () => ({ ai: aiEnabled(), ...aiInfo(), tts: ttsAvailable() }),
+  'GET /api/status': async () => {
+    const info = aiInfo();
+    let ai = aiEnabled();
+    let problem = null;
+    if (info.provider === 'ollama' && !(await ollamaReachable())) {
+      ai = false;
+      problem = 'ollama_offline';
+    }
+    return { ai, problem, ...info, tts: ttsAvailable() };
+  },
 
   'GET /api/sample': async () => structuredClone(SAMPLE),
 

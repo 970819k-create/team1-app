@@ -29,7 +29,7 @@ export function renderInput(view, status) {
       <h1>지원할 회사의 공고로<br>영어 면접을 준비하세요</h1>
       <p class="muted">채용공고와 기업 자료를 넣으면 핵심을 한글·영어로 정리하고, 그 내용으로 영어 면접 질문을 만들어 AI 면접관과 연습해요.</p>
       <div class="row wrap gap">
-        <a class="badge ${status.ai ? 'ai' : 'warn'}" href="#settings">${status.ai ? `${esc(status.providerLabel)} 연결됨 · 바꾸기` : 'AI 미연결 · 설정에서 연결하기'}</a>
+        <a class="badge ${status.ai ? 'ai' : 'warn'}" href="#settings">${status.ai ? `${esc(status.providerLabel)} 연결됨 · 바꾸기` : status.problem === 'ollama_offline' ? 'Ollama가 꺼져 있어요 · 설정에서 다른 AI 고르기' : 'AI 미연결 · 설정에서 연결하기'}</a>
         <button class="btn ghost" data-action="sample">샘플로 체험하기</button>
       </div>
     </section>

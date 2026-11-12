@@ -107,6 +107,18 @@ export async function onSettingsAction(btn, view) {
       return true;
     }
     case 'use-provider':
+      if (id === 'ollama') {
+        // 키가 없는 Ollama는 실제로 켜져 있는지 확인한 뒤에만 고른다
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> 확인 중…';
+        try {
+          const r = await api('/api/settings/verify', { id, model: store.aiConfig().models.ollama || '' });
+          if (r.warning) { draw(view, { ollama: { text: r.warning } }); return true; }
+        } catch (err) {
+          draw(view, { ollama: { error: true, text: err.message } });
+          return true;
+        }
+      }
       store.setAiConfig((c) => { c.provider = id; });
       draw(view);
       toast(`이제 ${meta.providers.find((p) => p.id === id).label}를 써요.`);

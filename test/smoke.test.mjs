@@ -14,7 +14,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 let server;
 
 before(async () => {
-  const env = { ...process.env, PORT: String(PORT), IGNORE_DOTENV: '1', AI_PROVIDER: '', PIPER_VOICE: '/nonexistent' };
+  const env = { ...process.env, PORT: String(PORT), IGNORE_DOTENV: '1', AI_PROVIDER: '', PIPER_VOICE: '/nonexistent', OLLAMA_BASE_URL: 'http://127.0.0.1:9' };
   for (const k of ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'HF_TOKEN']) delete env[k];
   server = spawn(process.execPath, ['server.js'], { cwd: ROOT, env, stdio: 'ignore' });
   for (let i = 0; i < 50; i++) {
@@ -105,6 +105,14 @@ test('브라우저가 보낸 AI 설정은 그 요청에만 쓰임', async () => 
 test('서버는 키를 저장하지 않음 (설정 목록에 키가 없음)', async () => {
   const s = await (await fetch(BASE + '/api/settings')).text();
   assert.doesNotMatch(s, /sk-ant-[A-Za-z0-9_-]{6,}|"preview"/);
+});
+
+test('Ollama가 꺼져 있으면 미연결로 표시하고 이유를 알림', async () => {
+  const cfg = Buffer.from(JSON.stringify({ provider: 'ollama' })).toString('base64');
+  const s = await (await fetch(BASE + '/api/status', { headers: { 'X-AI-Config': cfg } })).json();
+  assert.equal(s.provider, 'ollama');
+  assert.equal(s.ai, false);
+  assert.equal(s.problem, 'ollama_offline');
 });
 
 test('옛 서버 안내: 없는 API는 다시 켜라고 알림', async () => {

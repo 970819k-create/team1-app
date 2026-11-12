@@ -119,9 +119,10 @@ async function refreshStatus() {
   configure(status);
   const badge = $('#ai-status');
   const short = (status.providerLabel || 'AI').replace(/\s*\(.*\)\s*/, '');
-  badge.textContent = status.ai ? `${short} 연결됨` : 'AI 미연결 · 설정';
+  badge.textContent = status.ai ? `${short} 연결됨` : status.problem === 'ollama_offline' ? 'Ollama 꺼짐 · 설정' : 'AI 미연결 · 설정';
   badge.className = `badge ${status.ai ? 'ai' : 'warn'}`;
-  badge.title = status.ai ? `${status.providerLabel} · ${status.model} — 눌러서 바꾸기` : '눌러서 AI 연결하기';
+  badge.title = status.ai ? `${status.providerLabel} · ${status.model} — 눌러서 바꾸기`
+    : status.problem === 'ollama_offline' ? 'Ollama가 꺼져 있어요. 눌러서 다른 AI를 고르거나 Ollama를 켜세요.' : '눌러서 AI 연결하기';
 }
 setSettingsListener(refreshStatus);
 
