@@ -115,6 +115,20 @@ test('Ollama가 꺼져 있으면 미연결로 표시하고 이유를 알림', as
   assert.equal(s.problem, 'ollama_offline');
 });
 
+test('AI 답에서 JSON만 골라냄 (생각 과정·코드 블록 제거)', async () => {
+  const { extractJson } = await import('../lib/providers.js');
+  assert.deepEqual(extractJson('<think>먼저 생각…{"x":0}</think>\n```json\n{"a":1}\n```'), { a: 1 });
+  assert.deepEqual(extractJson('설명입니다 {"b":2} 끝'), { b: 2 });
+  assert.equal(extractJson('JSON 없음'), null);
+});
+
+test('Hugging Face 기본 모델과 추천 목록', async () => {
+  const s = await (await fetch(BASE + '/api/settings')).json();
+  const hf = s.providers.find((p) => p.id === 'huggingface');
+  assert.equal(hf.defaultModel, 'openai/gpt-oss-120b');
+  assert.ok(hf.suggestions.length >= 3);
+});
+
 test('옛 서버 안내: 없는 API는 다시 켜라고 알림', async () => {
   const r = await (await fetch(BASE + '/api/nope')).json();
   assert.equal(r.code, 'unknown_api');

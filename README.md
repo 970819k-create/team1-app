@@ -29,7 +29,7 @@ npm start
 | Claude (Anthropic) | console.anthropic.com → API Keys (`sk-ant-...`) | `claude-opus-5-5` | 품질이 가장 좋음, 유료 |
 | OpenAI (ChatGPT) | platform.openai.com/api-keys (`sk-...`) | `gpt-4.1-mini` | 유료 (ChatGPT 구독과 별개) |
 | Google Gemini | aistudio.google.com/apikey | `gemini-2.5-flash` | 무료 사용량 있음 |
-| Hugging Face | huggingface.co/settings/tokens (`hf_...`) | `Qwen/Qwen2.5-72B-Instruct` | 공개 모델, 매달 소량 무료. 토큰 권한에 "Inference Providers 호출" 필요 |
+| Hugging Face | huggingface.co/settings/tokens (`hf_...`) | `openai/gpt-oss-120b` | 공개 모델, 매달 소량 무료. 토큰 권한에 "Inference Providers 호출" 필요. 설정 화면에서 추천 모델(GLM-5.3, Llama-3.3-70B 등)을 눌러 바꿀 수 있음 |
 | Ollama (내 PC) | 키 없음. ollama.com에서 설치 후 `ollama pull qwen2.5:7b` | `qwen2.5:7b` | 완전 무료·오프라인, 메모리 8GB 이상 필요, 품질은 낮을 수 있음 |
 
 모델 이름은 각 카드의 [모델] 칸에서 바꿀 수 있습니다. Hugging Face의 GGUF 모델은 `ollama pull hf.co/사용자/모델` 형식으로 Ollama에 받아 쓸 수 있습니다.

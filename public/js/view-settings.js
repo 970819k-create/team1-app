@@ -86,6 +86,10 @@ function card(p, c, active, note) {
           </div>` : ''}
         <label class="field-label" for="model-${p.id}">모델 <span class="opt">비우면 기본값 ${esc(p.defaultModel)}</span></label>
         <input id="model-${p.id}" class="input" autocomplete="off" spellcheck="false" value="${esc(myModel)}" placeholder="${esc(p.defaultModel)}">
+        ${p.suggestions?.length ? `<div class="suggest" role="group" aria-label="추천 모델">
+          ${p.suggestions.map((m) => `<button type="button" class="suggest-chip ${(myModel || p.defaultModel) === m.id ? 'on' : ''}" data-action="pick-model" data-id="${p.id}" data-model="${esc(m.id)}" title="${esc(m.note)}">
+            <b>${esc(m.id)}</b><span>${esc(m.note)}</span></button>`).join('')}
+        </div>` : ''}
         ${note ? `<p class="alert ${note.error ? 'error' : 'info'} small">${esc(note.text)}</p>` : ''}
         <div class="row gap-s wrap provider-actions">
           <button class="btn primary small" type="submit">${p.needsKey ? '확인하고 저장' : '연결 확인하고 사용'}</button>
@@ -100,6 +104,13 @@ function card(p, c, active, note) {
 export async function onSettingsAction(btn, view) {
   const id = btn.dataset.id;
   switch (btn.dataset.action) {
+    case 'pick-model': {
+      const input = $(`#model-${id}`);
+      input.value = btn.dataset.model;
+      btn.closest('.suggest').querySelectorAll('.suggest-chip').forEach((b) => b.classList.toggle('on', b === btn));
+      input.focus();
+      return true;
+    }
     case 'toggle-key': {
       const input = $(`#key-${id}`);
       input.type = input.type === 'password' ? 'text' : 'password';
