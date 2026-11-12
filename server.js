@@ -8,10 +8,11 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 try { process.loadEnvFile(path.join(ROOT, '.env')); } catch { /* .env 없음 */ }
 
-const { aiEnabled, analyze, feedback, interviewTurn, interviewReport, AiError, MODEL } = await import('./lib/ai.js');
+const { aiEnabled, aiInfo, analyze, feedback, interviewTurn, interviewReport, AiError } = await import('./lib/ai.js');
 const { basicFeedback, basicTurn, basicReport } = await import('./lib/basic.js');
 const { fetchSource } = await import('./lib/fetch-source.js');
 const { ttsAvailable, synthesize } = await import('./lib/tts.js');
+const { settingsStatus, saveProvider, setActive, deleteKey, KeyError } = await import('./lib/settings.js');
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC = path.join(ROOT, 'public');
@@ -81,10 +82,28 @@ function serveStatic(req, res) {
 /* API                                                                 */
 /* ------------------------------------------------------------------ */
 
+/** API 키 설정은 이 컴퓨터에서 연 화면에서만 바꿀 수 있다 (다른 기기·다른 사이트 차단) */
+function assertLocalRequest(req) {
+  const ip = req.socket.remoteAddress || '';
+  const local = ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+  const origin = req.headers.origin;
+  const sameOrigin = !origin || origin === `http://${req.headers.host}`;
+  const json = (req.headers['content-type'] || '').startsWith('application/json');
+  if (!local || !sameOrigin || (req.method !== 'GET' && !json)) {
+    throw Object.assign(new Error('API 키 설정은 서버를 켠 컴퓨터의 브라우저에서만 바꿀 수 있어요.'), { status: 403 });
+  }
+}
+
 const routes = {
-  'GET /api/status': async () => ({ ai: aiEnabled(), model: aiEnabled() ? MODEL : null, tts: ttsAvailable() }),
+  'GET /api/status': async () => ({ ai: aiEnabled(), ...aiInfo(), tts: ttsAvailable() }),
 
   'GET /api/sample': async () => structuredClone(SAMPLE),
+
+  // AI 설정 (제공자 선택, 키·모델 저장)
+  'GET /api/settings': async () => settingsStatus(),
+  'POST /api/settings/provider': async (body, req) => { assertLocalRequest(req); return saveProvider(body); },
+  'POST /api/settings/active': async (body, req) => { assertLocalRequest(req); return setActive(body.id); },
+  'POST /api/settings/delete': async (body, req) => { assertLocalRequest(req); return deleteKey(body.id); },
 
   // ① 자료 읽기 + ② 분석
   'POST /api/analyze': async (body) => {
@@ -117,7 +136,7 @@ const routes = {
       return {
         ok: false,
         reason: 'no_ai',
-        message: 'AI가 연결되지 않아 새 자료를 분석할 수 없어요. README의 "API 키 설정"을 따라 키를 넣고 서버를 다시 켜 주세요. 키 없이도 [샘플로 체험하기]로 전체 흐름을 써 볼 수 있어요.',
+        message: 'AI가 연결되지 않아 새 자료를 분석할 수 없어요. 오른쪽 위 [설정]에서 쓸 AI와 키를 넣어 주세요. 키 없이도 [샘플로 체험하기]로 전체 흐름을 써 볼 수 있어요.',
         sources: sources.map(({ text, ...s }) => ({ ...s, chars: text?.length || 0 })),
       };
     }
@@ -165,8 +184,9 @@ const server = http.createServer(async (req, res) => {
   }
   try {
     const body = req.method === 'POST' ? await readJson(req) : {};
-    send(res, 200, await handler(body));
+    send(res, 200, await handler(body, req));
   } catch (err) {
+    if (err instanceof KeyError) return send(res, 400, { error: err.message });
     if (err instanceof AiError) return send(res, err.code === 'auth' ? 401 : err.code === 'rate' ? 429 : 502, { error: err.message, code: err.code });
     if (err.status) return send(res, err.status, { error: err.message });
     console.error(err);
@@ -177,7 +197,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`\n  기업 자료 기반 AI 영어 면접 준비`);
   console.log(`  ▶ http://localhost:${PORT}\n`);
-  console.log(`  AI 분석·피드백: ${aiEnabled() ? `연결됨 (${MODEL})` : '연결 안 됨 — .env에 ANTHROPIC_API_KEY를 넣으면 켜져요. 지금은 샘플·기본 피드백으로 동작해요.'}`);
+  console.log(`  AI 분석·피드백: ${aiEnabled() ? `연결됨 (${aiInfo().providerLabel} · ${aiInfo().model})` : '연결 안 됨 — 화면 오른쪽 위 [설정]에서 AI와 키를 고르면 켜져요.'}`);
   console.log(`  면접관 음성: ${ttsAvailable() ? 'Piper 음성 사용' : '브라우저 내장 음성 사용'}\n`);
   if (ttsAvailable()) synthesize('Hello.').catch(() => {}); // 음성 모델을 미리 불러 첫 질문 지연을 줄인다
 });

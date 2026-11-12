@@ -8,6 +8,7 @@ import { renderAnalysis, onAnalysisAction } from './view-analysis.js';
 import { renderPractice, onPracticeAction, leavePractice } from './view-practice.js';
 import { renderInterview, bindInterviewSetup, onInterviewAction, leaveInterview, renderResult, onResultAction, setNavigator, interviewActive } from './view-interview.js';
 import { renderReview, onReviewAction, onReviewSubmit, onReviewChange } from './view-review.js';
+import { renderSettings, onSettingsAction, onSettingsSubmit, setSettingsListener } from './view-settings.js';
 
 const view = $('#view');
 let status = { ai: false, tts: false };
@@ -36,7 +37,7 @@ function route() {
   current = r;
 
   // 상단 메뉴 표시
-  const tab = r.name === 'review' ? 'review' : r.name === 'home' ? 'home' : 'project';
+  const tab = ['review', 'settings', 'home'].includes(r.name) ? r.name : 'project';
   $$('.topnav a').forEach((a) => a.setAttribute('aria-current', a.dataset.tab === tab ? 'page' : 'false'));
   const p = r.id ? store.project(r.id) : null;
   const crumb = $('#crumb');
@@ -60,6 +61,7 @@ function route() {
       return bindInterviewSetup(view, p);
     case 'result': return p ? renderResult(view, p, r.sub) : notFound();
     case 'review': return renderReview(view);
+    case 'settings': return renderSettings(view);
     default: return renderInput(view, status);
   }
 }
@@ -88,10 +90,15 @@ view.addEventListener('click', async (e) => {
   }
   if (r.name === 'result' && p && onResultAction(btn, p, r.sub)) return;
   if (r.name === 'review') await onReviewAction(btn, rerender);
+  if (r.name === 'settings') await onSettingsAction(btn, view);
 });
 
 view.addEventListener('submit', (e) => {
   if (parse().name === 'review' && onReviewSubmit(e.target, rerender)) e.preventDefault();
+  if (parse().name === 'settings' && e.target.dataset.form === 'provider') {
+    e.preventDefault();
+    onSettingsSubmit(e.target, view);
+  }
 });
 view.addEventListener('change', (e) => {
   if (parse().name === 'review') onReviewChange(e.target, rerender);
@@ -103,15 +110,23 @@ window.addEventListener('beforeunload', (e) => {
   if (interviewActive()) { e.preventDefault(); e.returnValue = ''; }
 });
 
-// 시작
-(async () => {
+async function refreshStatus() {
   try {
     status = await api('/api/status');
   } catch (err) {
     toast(err.message, 8000);
   }
   configure(status);
-  $('#ai-status').textContent = status.ai ? 'AI 연결됨' : 'AI 미연결';
-  $('#ai-status').className = `badge ${status.ai ? 'ai' : 'warn'}`;
+  const badge = $('#ai-status');
+  const short = (status.providerLabel || 'AI').replace(/\s*\(.*\)\s*/, '');
+  badge.textContent = status.ai ? `${short} 연결됨` : 'AI 미연결 · 설정';
+  badge.className = `badge ${status.ai ? 'ai' : 'warn'}`;
+  badge.title = status.ai ? `${status.providerLabel} · ${status.model} — 눌러서 바꾸기` : '눌러서 AI 연결하기';
+}
+setSettingsListener(refreshStatus);
+
+// 시작
+(async () => {
+  await refreshStatus();
   route();
 })();

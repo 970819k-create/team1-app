@@ -294,6 +294,18 @@ body.in-room .crumb { display: none; }
 .table th { font-weight: 650; white-space: nowrap; }
 .table .num { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
 
+/* ---------- 설정 ---------- */
+a.badge { text-decoration: none; }
+#ai-status { min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; display: inline-block; flex-shrink: 1; }
+.topnav { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.provider-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 16px; margin-bottom: 16px; }
+.provider { display: grid; gap: 4px; align-content: start; }
+.provider.active { border-color: var(--ok); box-shadow: 0 0 0 2px var(--ok-soft), var(--shadow); }
+.provider h2 { margin: 0; }
+.provider-form .row .input { flex: 1; min-width: 0; }
+.provider-actions { margin-top: 12px; }
+code { font-family: var(--mono); font-size: 0.92em; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+
 /* ---------- 대화상자, 토스트 ---------- */
 .dialog { border: 0; border-radius: 16px; padding: 22px; max-width: min(440px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgb(0 0 0 / .25); }
 .dialog::backdrop { background: rgb(10 12 20 / .45); }
@@ -309,6 +321,8 @@ body.in-room .crumb { display: none; }
   .topbar-inner { gap: 10px; }
   .brand { font-size: 0; gap: 0; }
   .brand-mark { font-size: 12px; }
+  .topnav a { padding: 6px 7px; }
+  #ai-status { max-width: 96px; }
   .card { padding: 16px; }
   .q-text { font-size: 19px; }
   .room { border-radius: 16px; min-height: 70vh; }

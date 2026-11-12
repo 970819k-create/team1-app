@@ -15,19 +15,23 @@ npm start
 
 브라우저에서 **http://localhost:3000** 을 엽니다. 음성으로 답하려면 **Chrome 또는 Edge**를 권장합니다.
 
-### API 키 설정 (AI 분석·피드백 켜기)
+### AI 연결 (오른쪽 위 [설정])
 
-1. https://console.anthropic.com 에서 API 키를 만듭니다.
-2. `.env.example`을 `.env`로 복사하고 키를 넣습니다.
+앱 화면의 **[설정]**에서 쓸 AI를 고르고 키를 넣습니다. 키를 저장할 때 실제로 연결되는지 확인하고, 언제든 바꾸거나 지울 수 있습니다.
+키는 이 컴퓨터의 `.env` 파일에만 저장됩니다.
 
-   ```bash
-   cp .env.example .env
-   # .env 파일을 열어 ANTHROPIC_API_KEY=sk-ant-... 입력
-   ```
-3. 서버를 다시 켭니다 (`npm start`). 터미널에 `AI 분석·피드백: 연결됨`이 보이면 됩니다.
+| AI | 키 받는 곳 | 기본 모델 | 특징 |
+|---|---|---|---|
+| Claude (Anthropic) | console.anthropic.com → API Keys (`sk-ant-...`) | `claude-opus-5-5` | 품질이 가장 좋음, 유료 |
+| OpenAI (ChatGPT) | platform.openai.com/api-keys (`sk-...`) | `gpt-4.1-mini` | 유료 (ChatGPT 구독과 별개) |
+| Google Gemini | aistudio.google.com/apikey | `gemini-2.5-flash` | 무료 사용량 있음 |
+| Hugging Face | huggingface.co/settings/tokens (`hf_...`) | `Qwen/Qwen2.5-72B-Instruct` | 공개 모델, 매달 소량 무료. 토큰 권한에 "Inference Providers 호출" 필요 |
+| Ollama (내 PC) | 키 없음. ollama.com에서 설치 후 `ollama pull qwen2.5:7b` | `qwen2.5:7b` | 완전 무료·오프라인, 메모리 8GB 이상 필요, 품질은 낮을 수 있음 |
 
-**키가 없어도** 앱은 동작합니다. 처음 화면의 **[샘플로 체험하기]**로 가상 기업 자료를 불러와 분석 → 질문별 연습 → 실전 면접 → 결과 → 복습까지
-전체 흐름을 써 볼 수 있고, 피드백과 면접관 대화는 규칙 기반 '기본 피드백'으로 동작합니다(화면에 'AI 미연결'로 표시).
+모델 이름은 각 카드의 [모델] 칸에서 바꿀 수 있습니다. Hugging Face의 GGUF 모델은 `ollama pull hf.co/사용자/모델` 형식으로 Ollama에 받아 쓸 수 있습니다.
+
+**AI가 없어도** 처음 화면의 **[샘플로 체험하기]**로 가상 기업 자료를 불러와 분석 → 질문별 연습 → 실전 면접 → 결과 → 복습까지
+전체 흐름을 써 볼 수 있습니다. 피드백과 면접관 대화는 규칙 기반 '기본 피드백'으로 동작합니다(화면에 'AI 미연결'로 표시).
 
 ### 면접관 목소리 (선택)
 
@@ -71,7 +75,7 @@ curl -L -O https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/rya
 
 - 자료, 분석 결과, 답변 텍스트, 저장한 표현·질문, 학습 기록은 **브라우저(localStorage)에만** 저장됩니다. 로그인은 없습니다.
 - 회사별 삭제(처음 화면의 🗑), 표현·질문 개별 삭제, 전체 삭제(나의 복습 > 학습 기록·데이터)를 할 수 있습니다.
-- 분석·피드백·면접 진행 시 자료와 답변 텍스트가 **Anthropic API**로 전송됩니다.
+- 분석·피드백·면접 진행 시 자료와 답변 텍스트가 **[설정]에서 고른 AI 제공자**로 전송됩니다 (Ollama는 내 PC 안에서만 처리).
 - **음성 원본은 저장하지 않습니다.** 음성 인식은 브라우저 기능을 쓰며, Chrome은 인식을 위해 음성을 Google 서버로 보낼 수 있습니다.
 - 학습 이벤트(분석 완료, 연습 답변·재답변, 시뮬레이션 시작·완료, 표현 저장, 복습 완료)를 브라우저에 기록하고 '학습 기록' 탭에서 보여 줍니다. (PRD 7장 지표 검증용)
 
@@ -79,7 +83,9 @@ curl -L -O https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/rya
 
 ```
 server.js              로컬 서버 (정적 파일 + API), 포트 3000
-lib/ai.js              Claude API (claude-opus-5-5, 구조화 출력, 서버 측 거절 대비 fallbacks)
+lib/ai.js              프롬프트·결과 스키마, 고른 AI로 호출 (Claude는 구조화 출력 + 서버 측 거절 대비 fallbacks)
+lib/providers.js       OpenAI·Gemini·Hugging Face·Ollama 호출과 키 확인 (JSON 결과를 스키마로 검사, 어긋나면 1회 재요청)
+lib/settings.js        [설정] 화면의 키·모델 저장 (.env), 설정 변경은 서버를 켠 컴퓨터에서만 허용
 lib/basic.js           API 키가 없을 때 쓰는 규칙 기반 피드백·면접 진행
 lib/fetch-source.js    링크 본문 읽기 (내부망 주소 차단, 실패 이유 안내)
 lib/tts.js             Piper 음성 합성 (있을 때만)
@@ -87,7 +93,7 @@ samples/               샘플 프로젝트 (가상 기업 자료)
 public/                화면 (HTML·CSS·JS 모듈, 빌드 없음)
 ```
 
-- 모델: `claude-opus-5-5` (`.env`의 `CLAUDE_MODEL`로 변경 가능). 분석·피드백·결과는 effort `medium`, 면접 중 다음 발화는 대기 시간을 줄이려고 `low`.
+- Claude를 고르면 분석·피드백·결과는 effort `medium`, 면접 중 다음 발화는 대기 시간을 줄이려고 `low`로 호출합니다.
 - 서버 측 거절 대비(`fallbacks: "default"`)를 켜 두었습니다. 요청이 안전 분류기에 걸리면 API가 다른 모델로 다시 시도합니다. 끄려면 `lib/ai.js`에서 `betas`와 `fallbacks` 두 줄을 지우세요.
 
 ## 알아 둘 점
