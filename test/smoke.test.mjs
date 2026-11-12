@@ -148,6 +148,29 @@ test('면접관 목소리: OpenAI 키가 없으면 이유를 알리고, 선택�
   assert.equal((await r2.json()).code, 'tts_unavailable');
 });
 
+test('영어 면접 질문지: 분야별 질문과 출처를 읽음', async () => {
+  const { categories } = await (await fetch(BASE + '/api/question-bank')).json();
+  assert.ok(categories.length >= 10);
+  const all = categories.flatMap((c) => c.questions);
+  assert.ok(all.length >= 60);
+  assert.ok(all.every((q) => q.en && q.ko && q.id.startsWith('B')));
+  const reverse = categories.find((c) => /역질문/.test(c.name));
+  assert.ok(reverse && reverse.interviewer === false, '역질문은 면접관 질문에서 제외');
+  assert.ok(all.some((q) => q.sourceUrl.startsWith('https://')), '출처 링크');
+});
+
+test('OpenAI 모델 순위: 쓸 수 있는 최고 버전을 고름', async () => {
+  const { rankOpenAIModels, isReasoningModel } = await import('../lib/providers.js');
+  const r = rankOpenAIModels(['gpt-4.1-mini', 'gpt-5', 'gpt-5-mini', 'gpt-5.1', 'gpt-5-pro', 'gpt-4o-mini-tts', 'tts-1', 'whisper-1', 'gpt-4o-realtime-preview']);
+  assert.equal(r.best.chat, 'gpt-5.1');
+  assert.equal(r.best.tts, 'gpt-4o-mini-tts');
+  assert.ok(!r.chat.includes('gpt-5-pro') && !r.chat.includes('whisper-1'));
+  assert.equal(isReasoningModel('gpt-5.1'), true);
+  assert.equal(isReasoningModel('gpt-4.1'), false);
+  const res = await post('/api/settings/openai-models', {});
+  assert.equal(res.status, 400);
+});
+
 test('옛 서버 안내: 없는 API는 다시 켜라고 알림', async () => {
   const r = await (await fetch(BASE + '/api/nope')).json();
   assert.equal(r.code, 'unknown_api');

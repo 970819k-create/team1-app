@@ -42,7 +42,9 @@ function aiHeader() {
   }
   if (!c.provider && !Object.keys(c.keys).length) return {};
   // 영문만 들어가지만, 혹시 모를 글자에도 실패하지 않게 UTF-8로 바꿔 base64로 보낸다
-  const bytes = new TextEncoder().encode(JSON.stringify(c));
+  // 모델 목록 같은 화면용 정보는 빼고, 요청에 필요한 것만 보낸다
+  const send = { provider: c.provider, keys: c.keys, models: c.models, tts: { engine: c.tts?.engine, voice: c.tts?.voice, model: c.tts?.model } };
+  const bytes = new TextEncoder().encode(JSON.stringify(send));
   let bin = '';
   bytes.forEach((b) => { bin += String.fromCharCode(b); });
   return { 'X-AI-Config': btoa(bin) };
@@ -188,7 +190,7 @@ export function handleCommon(btn) {
   return false;
 }
 
-export const TYPE_LABEL = { motivation: '지원 동기', role_fit: '직무 적합', experience: '경험', company: '기업 이해', behavioral: '협업·태도' };
+export const TYPE_LABEL = { motivation: '지원 동기', role_fit: '직무 적합', experience: '경험', company: '기업 이해', behavioral: '협업·태도', technical: '직무 지식', reverse: '역질문' };
 export const CAT_LABEL = { business: '사업', product: '제품·서비스', trend: '동향', other: '기타' };
 
 export function fmtDate(iso) {

@@ -767,3 +767,80 @@ body.in-room .view { padding-top:18px; }
   .quick-actions .quick-icon img, .quick-actions .quick-icon::after { animation: none !important; transform: scale(1.18); }
   .quick-actions .quick-action, .quick-actions .quick-action:hover { transition: none; }
 }
+
+/* =====================================================================
+   실전 면접 설정: 면접관 목소리 · 질문 출처
+   ===================================================================== */
+.voice-picker, .source-picker { border: 0; padding: 0; margin: 18px 0 0; display: grid; gap: 8px; min-width: 0; }
+.voice-picker legend, .source-picker legend { font-weight: 700; font-size: 14px; margin-bottom: 4px; padding: 0; }
+.voice-grid.compact { grid-template-columns: repeat(auto-fill, minmax(min(100%, 118px), 1fr)); }
+.voice-grid.compact .voice-chip { padding: 7px 9px; }
+.voice-grid.compact .voice-chip span { font-size: 11.5px; }
+.voice-picker > .btn { justify-self: start; }
+.seg-radio { display: inline-flex; }
+.seg-radio input { position: absolute; opacity: 0; pointer-events: none; }
+.seg-radio span { padding: 7px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.seg-radio input:checked + span { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.seg-radio input:focus-visible + span { outline: 2px solid var(--accent); }
+.source-picker .seg { flex-wrap: wrap; justify-self: start; }
+.bank-cats { display: grid; gap: 2px; max-height: 260px; overflow: auto; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.bank-cats[hidden] { display: none; }
+.bank-cat { margin-top: 4px; align-items: flex-start; }
+.bank-cat input { margin-top: 4px; }
+.src-chip.bank { font-family: var(--font); text-decoration: none; white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.bank-select { margin-bottom: 10px; align-items: center; }
+.bank-select .input.inline { margin-left: 0; max-width: 100%; }
+
+/* =====================================================================
+   면접 결과: 말하는 깜자
+   - 파일 음성(OpenAI·Piper)이면 실제 소리 크기(--talk 0~1)에 맞춰 몸이 움직이고
+   - 브라우저 음성이면 .css-talk 리듬으로 움직인다
+   ===================================================================== */
+.kkamja-talk {
+  display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 22px; align-items: center;
+  margin: 8px 0 20px; padding: 20px 24px; border-radius: 24px;
+  background: linear-gradient(135deg, #fff8ea, #fffdf7); border: 1px solid #efe2c4;
+}
+.kkamja-stage {
+  --talk: 0; position: relative; width: 150px; height: 150px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 60%, #f6e7c8, #f3dfb6 70%); display: grid; place-items: center;
+}
+.kkamja-speaker {
+  width: 118%; max-width: none; transform-origin: 50% 88%;
+  transform: translateY(calc(var(--talk) * -7px)) scaleY(calc(1 + var(--talk) * .08)) scaleX(calc(1 - var(--talk) * .035)) rotate(calc(var(--talk) * -3deg));
+  transition: transform 70ms linear; animation: kkamja-breathe 3.2s ease-in-out infinite;
+}
+.kkamja-stage.talking .kkamja-speaker { animation: none; }
+.kkamja-stage.css-talk .kkamja-speaker { animation: kkamja-talk .34s ease-in-out infinite alternate; }
+.talk-waves { position: absolute; right: -6px; top: 34%; display: flex; gap: 3px; align-items: center; opacity: 0; transition: opacity .2s; }
+.talk-waves i { width: 5px; height: 10px; border-radius: 3px; background: #c98a2e; transform: scaleY(calc(.6 + var(--talk) * 2.2)); transition: transform 80ms linear; }
+.talk-waves i:nth-child(2) { height: 16px; }
+.kkamja-stage.talking .talk-waves { opacity: 1; }
+.kkamja-stage.css-talk .talk-waves i { animation: talk-bar .45s ease-in-out infinite alternate; }
+.kkamja-stage.css-talk .talk-waves i:nth-child(2) { animation-delay: .15s; }
+.kkamja-stage.css-talk .talk-waves i:nth-child(3) { animation-delay: .3s; }
+.kkamja-bubble {
+  position: relative; display: grid; gap: 10px; padding: 16px 18px; border-radius: 18px;
+  background: #fff; border: 1px solid #efe2c4; box-shadow: 0 6px 18px rgba(90, 70, 25, .07); min-width: 0;
+}
+.kkamja-bubble::before {
+  content: ""; position: absolute; left: -9px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%) rotate(45deg);
+  background: #fff; border-left: 1px solid #efe2c4; border-bottom: 1px solid #efe2c4;
+}
+.kkamja-bubble b { color: #5a4316; }
+.kkamja-caption { font-size: 17px; line-height: 1.6; color: #1d2838; min-height: 54px; }
+@keyframes kkamja-breathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.01); } }
+@keyframes kkamja-talk {
+  from { transform: translateY(0) scaleY(1) rotate(0deg); }
+  to { transform: translateY(-6px) scaleY(1.07) scaleX(.97) rotate(-2.5deg); }
+}
+@keyframes talk-bar { from { transform: scaleY(.6); } to { transform: scaleY(2); } }
+@media (max-width: 560px) {
+  .kkamja-talk { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 18px 14px; }
+  .kkamja-stage { width: 120px; height: 120px; }
+  .kkamja-bubble::before { left: 50%; top: -9px; transform: translateX(-50%) rotate(135deg); }
+  .kkamja-bubble .row { justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kkamja-speaker, .kkamja-stage.css-talk .kkamja-speaker, .talk-waves i { animation: none !important; transform: none !important; }
+}

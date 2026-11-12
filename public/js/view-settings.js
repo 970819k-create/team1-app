@@ -71,10 +71,11 @@ const SAMPLE_LINE = "Hello, and thank you for joining us today. Could you briefl
 function ttsCard(c) {
   const t = c.tts || {};
   const engine = t.engine || (ttsInfo.piper ? 'piper' : 'browser');
-  const voice = t.voice || 'alloy';
-  const model = t.model || 'gpt-4o-mini-tts';
   const openai = meta.providers.find((p) => p.id === 'openai');
   const hasOpenAiKey = Boolean(c.keys.openai) || openai?.hasKey;
+  const found = c.openaiModels?.tts?.length ? c.openaiModels.tts : (ttsInfo.models || []).map((m) => m.id);
+  const best = c.openaiModels?.best?.tts || found[0] || 'gpt-4o-mini-tts';
+  const model = t.model || best;
   const opt = (value, title, desc, disabled = false) => `
     <label class="tts-option ${engine === value ? 'on' : ''} ${disabled ? 'disabled' : ''}">
       <input type="radio" name="tts-engine" value="${value}" ${engine === value ? 'checked' : ''} ${disabled ? 'disabled' : ''} data-change="tts-engine">
@@ -82,22 +83,18 @@ function ttsCard(c) {
     </label>`;
   return `
     <section class="card tts-card" id="tts-card">
-      <h2>면접관 목소리</h2>
-      <p class="small muted">질문 듣기와 실전 면접에서 면접관이 말할 목소리예요. 분석에 쓰는 AI와 따로 고를 수 있어요.</p>
-      <div class="tts-options" role="radiogroup" aria-label="면접관 목소리">
+      <h2>음성 방식</h2>
+      <p class="small muted">면접관과 깜자가 말할 때 쓰는 음성이에요. <b>면접관 목소리는 [실전 면접] 설정에서 면접관을 고르면서 함께 골라요.</b></p>
+      <div class="tts-options" role="radiogroup" aria-label="음성 방식">
         ${opt('browser', '브라우저 기본 음성', '무료 · 컴퓨터마다 목소리가 달라요')}
-        ${opt('openai', 'OpenAI 음성', '사람처럼 자연스러움 · 소액 요금 · OpenAI 키 필요')}
-        ${opt('piper', 'Piper 음성', ttsInfo.piper ? '무료 · 서버에 설치된 음성' : '이 서버에는 설치되지 않았어요', !ttsInfo.piper)}
+        ${opt('openai', 'OpenAI 음성', '사람처럼 자연스러움 · 면접관마다 다른 목소리 · 소액 요금')}
+        ${opt('piper', 'Piper 음성', ttsInfo.piper ? '무료 · 서버에 설치된 영어 음성' : '이 서버에는 설치되지 않았어요', !ttsInfo.piper)}
       </div>
       ${engine === 'openai' ? `
         ${hasOpenAiKey ? '' : '<p class="alert info small">위의 <b>OpenAI (ChatGPT)</b> 카드에 키를 먼저 저장해 주세요. 키가 없으면 브라우저 기본 음성으로 읽어요.</p>'}
-        <p class="field-label">목소리</p>
-        <div class="voice-grid" role="radiogroup" aria-label="OpenAI 목소리">
-          ${(ttsInfo.voices || []).map((v) => `<button type="button" class="voice-chip ${v.id === voice ? 'on' : ''}" data-action="tts-voice" data-voice="${esc(v.id)}" aria-pressed="${v.id === voice}"><b>${esc(v.id)}</b><span>${esc(v.note)}</span></button>`).join('')}
-        </div>
-        <label class="field-label" for="tts-model">음성 모델</label>
+        <label class="field-label" for="tts-model">음성 모델 <span class="opt">${c.openaiModels ? '이 계정에서 쓸 수 있는 모델' : '키를 저장하면 계정에서 쓸 수 있는 최고 버전을 자동으로 골라요'}</span></label>
         <select id="tts-model" class="input" data-change="tts-model">
-          ${(ttsInfo.models || []).map((m) => `<option value="${esc(m.id)}" ${m.id === model ? 'selected' : ''}>${esc(m.id)} — ${esc(m.note)}</option>`).join('')}
+          ${[...new Set([model, ...found])].map((m) => `<option value="${esc(m)}" ${m === model ? 'selected' : ''}>${esc(m)}${m === best ? ' — 최고 버전 (자동)' : ''}</option>`).join('')}
         </select>
         <p class="hint">비용 참고: 질문 한 개를 읽는 데 몇 원 정도예요. 같은 문장은 다시 만들지 않아 [질문 다시 듣기]는 추가 요금이 없어요.</p>` : ''}
       <div class="row gap-s wrap provider-actions">
@@ -130,8 +127,16 @@ function card(p, c, active, note) {
               placeholder="${keyState ? `${esc(keyState)} (바꾸려면 새 키 입력)` : '키를 붙여넣으세요'}">
             <button type="button" class="btn ghost small" data-action="toggle-key" data-id="${p.id}">보기</button>
           </div>` : ''}
-        <label class="field-label" for="model-${p.id}">모델 <span class="opt">비우면 기본값 ${esc(p.defaultModel)}</span></label>
-        <input id="model-${p.id}" class="input" autocomplete="off" spellcheck="false" value="${esc(myModel)}" placeholder="${esc(p.defaultModel)}">
+        ${p.id === 'openai' && c.openaiModels?.chat?.length ? `
+          <label class="field-label" for="model-${p.id}">분석 모델 <span class="opt">이 계정에서 쓸 수 있는 모델 · 높은 버전부터</span></label>
+          <select id="model-${p.id}" class="input">
+            ${c.openaiModels.chat.map((m) => `<option value="${esc(m)}" ${m === (myModel || c.openaiModels.best.chat) ? 'selected' : ''}>${esc(m)}${m === c.openaiModels.best.chat ? ' — 최고 버전 (자동)' : ''}</option>`).join('')}
+          </select>
+          <p class="hint">자동 적용: 분석 <b>${esc(myModel || c.openaiModels.best.chat)}</b> · 음성 <b>${esc(c.tts?.model || c.openaiModels.best.tts || '없음')}</b>
+            <button type="button" class="link small" data-action="openai-refresh">모델 목록 새로 확인</button></p>`
+        : `
+          <label class="field-label" for="model-${p.id}">모델 <span class="opt">${p.id === 'openai' ? '비워 두면 키 저장 때 쓸 수 있는 최고 버전을 자동으로 골라요' : `비우면 기본값 ${esc(p.defaultModel)}`}</span></label>
+          <input id="model-${p.id}" class="input" autocomplete="off" spellcheck="false" value="${esc(myModel)}" placeholder="${esc(p.id === 'openai' ? '자동 (최고 버전)' : p.defaultModel)}">`}
         ${p.suggestions?.length ? `<div class="suggest" role="group" aria-label="추천 모델">
           ${p.suggestions.map((m) => `<button type="button" class="suggest-chip ${(myModel || p.defaultModel) === m.id ? 'on' : ''}" data-action="pick-model" data-id="${p.id}" data-model="${esc(m.id)}" title="${esc(m.note)}">
             <b>${esc(m.id)}</b><span>${esc(m.note)}</span></button>`).join('')}
@@ -157,6 +162,13 @@ export async function onSettingsAction(btn, view) {
       input.focus();
       return true;
     }
+    case 'openai-refresh': {
+      btn.textContent = '확인 중…';
+      const found = await discoverOpenAI(store.aiConfig().keys.openai || '', null);
+      draw(view, { openai: { error: Boolean(found.error), text: found.error || `최고 버전을 다시 적용했어요: 분석 ${found.chat} · 음성 ${found.tts || '없음'}` } });
+      onChanged();
+      return true;
+    }
     case 'tts-voice':
       store.setAiConfig((c) => { c.tts = { ...(c.tts || {}), voice: btn.dataset.voice }; });
       draw(view);
@@ -165,7 +177,8 @@ export async function onSettingsAction(btn, view) {
     case 'tts-preview': {
       ttsStatus('불러오는 중…');
       try {
-        const p = speak(SAMPLE_LINE, { strict: true });
+        const setup = (store.aiConfig().tts || {}).setup || {};
+        const p = speak(SAMPLE_LINE, { strict: true, voice: setup.voice });
         ttsStatus('재생 중…');
         await p;
         ttsStatus('');
@@ -240,7 +253,13 @@ export async function onSettingsSubmit(form, view) {
       const cur = cfg.provider;
       if (!cur || id === 'ollama' || !(cfg.keys[cur] || meta.providers.find((x) => x.id === cur)?.hasKey)) cfg.provider = id;
     });
-    draw(view, r.warning ? { [id]: { text: r.warning } } : {});
+    let note = r.warning;
+    if (id === 'openai') {
+      const found = await discoverOpenAI(key, model);
+      if (found.error) note = [note, found.error].filter(Boolean).join(' ');
+      else if (!note) note = `이 계정에서 쓸 수 있는 최고 버전을 적용했어요: 분석 ${found.chat} · 음성 ${found.tts || '없음'}`;
+    }
+    draw(view, note ? { [id]: { text: note } } : {});
     toast(r.warning ? '저장했어요. 안내 문구를 확인해 주세요.' : '연결을 확인하고 이 브라우저에 저장했어요.', 4500);
     onChanged();
   } catch (err) {
@@ -248,6 +267,30 @@ export async function onSettingsSubmit(form, view) {
     if (typed) $(`#key-${id}`).value = typed;
   }
   return true;
+}
+
+/**
+ * OpenAI 계정에서 쓸 수 있는 모델을 받아, 사용자가 직접 고르지 않았으면 최고 버전을 적용한다.
+ * @returns {{chat?:string, tts?:string, error?:string}}
+ */
+async function discoverOpenAI(key, chosenModel) {
+  try {
+    const m = await api('/api/settings/openai-models', { key });
+    let applied = {};
+    store.setAiConfig((cfg) => {
+      const prevBest = cfg.openaiModels?.best?.chat;
+      cfg.openaiModels = { chat: m.chat.slice(0, 40), tts: m.tts, best: m.best, at: Date.now() };
+      const cur = cfg.models.openai;
+      // 직접 고른 모델이 없거나, 예전 자동 선택이었으면 새 최고 버전으로
+      if (m.best.chat && (!chosenModel || chosenModel === prevBest || !cur || cur === prevBest || cur === 'gpt-4.1-mini')) cfg.models.openai = m.best.chat;
+      cfg.tts = cfg.tts || {};
+      if (m.best.tts && (!cfg.tts.model || cfg.tts.modelAuto !== false)) { cfg.tts.model = m.best.tts; cfg.tts.modelAuto = true; }
+      applied = { chat: cfg.models.openai, tts: cfg.tts.model };
+    });
+    return applied;
+  } catch (err) {
+    return { error: `모델 목록은 받지 못했어요(${err.message}). 기본 모델로 써요.` };
+  }
 }
 
 function ttsStatus(text, error = false) {
@@ -268,7 +311,7 @@ export function onSettingsChange(el, view) {
     return true;
   }
   if (kind === 'tts-model') {
-    store.setAiConfig((c) => { c.tts = { ...(c.tts || {}), model: el.value }; });
+    store.setAiConfig((c) => { c.tts = { ...(c.tts || {}), model: el.value, modelAuto: el.value === c.openaiModels?.best?.tts }; });
     return true;
   }
   return false;

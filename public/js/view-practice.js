@@ -1,17 +1,46 @@
 // ③-A 질문별 연습: 질문 듣기 → 음성 답변 → 인식 텍스트 수정 → 예시·개선 표현 확인 → 다시 답하기
 import * as store from './store.js';
-import { speak, stopSpeaking, Listener, sttSupported } from './speech.js';
+import { speak, stopSpeaking, Listener, sttSupported, INTERVIEWER_VOICES } from './speech.js';
+import { interviewerCategories, bankQuestion } from './bank.js';
+import { bankSourceChip } from './view-interview.js';
 import { $, esc, api, toast, sourceChips, starExpr, starQuestion, withPlaceholders, TYPE_LABEL, aiBadge } from './ui.js';
 
 const ctx = { pid: null, key: null, listener: null, listening: false, interim: '', draft: '', loading: false, hideText: false, startedFor: null };
 
 /** 연습할 질문 목록: 분석에서 만든 질문 + 이 프로젝트에서 저장한 다른 질문(후속 질문 등) */
-function questionList(p) {
+const bankLabel = (q) => `${q.category.split(/[\s(/]/)[0]} ${q.id.split('-').pop()}`;
+const asBank = (q) => ({ ...q, key: q.id, bank: true, label: bankLabel(q), intent_ko: q.note || `영어 면접 질문지 · ${q.category}`, sources: [] });
+
+function questionList(p, key) {
   const base = p.analysis.questions.map((q) => ({ ...q, key: q.id }));
   const extra = store.savedQuestions()
     .filter((s) => s.projectId === p.id && !base.some((b) => b.en.trim().toLowerCase() === s.en.trim().toLowerCase()))
     .map((s, i) => ({ id: `S${i + 1}`, key: s.id, en: s.en, ko: s.ko, type: 'experience', intent_ko: '면접에서 저장한 질문이에요.', sources: [], saved: true }));
-  return [...base, ...extra];
+  // 질문지: 고른 분야의 질문 + 이미 연습한 질문지 질문 + 주소로 직접 연 질문
+  const cat = interviewerCategories().find((c) => c.id === ctx.bankCat);
+  const bankIds = new Set([
+    ...(cat ? cat.questions.map((q) => q.id) : []),
+    ...Object.keys(p.practice || {}).filter((k) => /^B\d/.test(k)),
+    ...(key && /^B\d/.test(key) ? [key] : []),
+  ]);
+  const bank = [...bankIds].map(bankQuestion).filter(Boolean).filter((q) => !extra.some((e) => e.en === q.en)).map(asBank);
+  return [...base, ...extra, ...bank];
+}
+
+/** 실전 면접 설정에서 고른 면접관 목소리를 연습에서도 쓴다 */
+function myVoice() {
+  const setup = (store.aiConfig().tts || {}).setup || {};
+  const n = setup.interviewer || 1;
+  return { voice: setup.voice || INTERVIEWER_VOICES[n].voice, gender: INTERVIEWER_VOICES[n].gender };
+}
+
+/** 질문지 분야 선택 */
+export function onPracticeChange(el, p, go) {
+  if (el.dataset.change !== 'bank-cat') return false;
+  ctx.bankCat = el.value;
+  const cat = interviewerCategories().find((c) => c.id === el.value);
+  if (cat) go(`#practice/${p.id}/${cat.questions[0].id}`);
+  return true;
 }
 
 function attemptsOf(p, key) {
@@ -19,7 +48,7 @@ function attemptsOf(p, key) {
 }
 
 export function renderPractice(view, p, key) {
-  const list = questionList(p);
+  const list = questionList(p, key);
   const q = list.find((x) => x.key === key) || list[0];
   if (ctx.pid !== p.id || ctx.key !== q.key) {
     stopListening();
@@ -42,17 +71,24 @@ export function renderPractice(view, p, key) {
       </div>
     </div>
 
+    <div class="bank-select row gap-s wrap">
+      <label class="small" for="bank-cat">영어 면접 질문지로 연습</label>
+      <select id="bank-cat" class="input inline" data-change="bank-cat">
+        <option value="">분야 고르기</option>
+        ${interviewerCategories().map((c) => `<option value="${esc(c.id)}" ${ctx.bankCat === c.id ? 'selected' : ''}>${esc(c.name)} (${c.questions.length})</option>`).join('')}
+      </select>
+    </div>
     <nav class="q-tabs" aria-label="질문 선택">
       ${list.map((x) => `<a href="#practice/${esc(p.id)}/${esc(x.key)}" class="${x.key === q.key ? 'on' : ''} ${attemptsOf(p, x.key).length ? 'done' : ''}"
-        aria-current="${x.key === q.key ? 'page' : 'false'}">${x.saved ? '★' : ''}${esc(x.id)}${attemptsOf(p, x.key).length ? ' ✓' : ''}</a>`).join('')}
+        aria-current="${x.key === q.key ? 'page' : 'false'}" ${x.bank ? 'data-bank="1"' : ''}>${x.saved ? '★' : ''}${x.bank ? '📘 ' : ''}${esc(x.label || x.id)}${attemptsOf(p, x.key).length ? ' ✓' : ''}</a>`).join('')}
     </nav>
 
     <div class="layout-side">
       <div class="stack">
         <section class="card question-card">
           <div class="row between wrap gap-s">
-            <span class="tag">${esc(q.id)} · ${TYPE_LABEL[q.type] || '질문'}</span>
-            <span class="row gap-s wrap"><span class="chips">${sourceChips(q.sources, p.id)}</span>${starQuestion(p.id, q)}</span>
+            <span class="tag">${q.bank ? `질문지 · ${esc(q.category)}` : `${esc(q.id)} · ${TYPE_LABEL[q.type] || '질문'}`}</span>
+            <span class="row gap-s wrap">${q.bank ? bankSourceChip(q) : `<span class="chips">${sourceChips(q.sources, p.id)}</span>`}${starQuestion(p.id, q)}</span>
           </div>
           <p class="q-text en ${ctx.hideText ? 'blurred' : ''}" lang="en">${esc(q.en)}</p>
           <div class="row gap-s wrap">
@@ -191,10 +227,10 @@ function startListening(p, q, append) {
 }
 
 export function onPracticeAction(btn, p, key, rerender) {
-  const q = questionList(p).find((x) => x.key === key) || questionList(p)[0];
+  const q = questionList(p, key).find((x) => x.key === key) || questionList(p, key)[0];
   switch (btn.dataset.action) {
     case 'play-q':
-      speak(q.en).catch((err) => toast(err.message, 5000));
+      speak(q.en, myVoice()).catch((err) => toast(err.message, 5000));
       return true;
     case 'toggle-text': ctx.hideText = !ctx.hideText; rerender(); return true;
     case 'start-rec': startListening(p, q, false); return true;
@@ -210,7 +246,7 @@ export function onPracticeAction(btn, p, key, rerender) {
       ctx.draft = '';
       renderAnswer(p, q);
       renderFeedback(p, q);
-      speak(q.en).catch(() => {});
+      speak(q.en, myVoice()).catch(() => {});
       return true;
     case 'cancel-retry':
       ctx.retry = false;

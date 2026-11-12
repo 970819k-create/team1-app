@@ -131,7 +131,7 @@ const AI_KEY = 'interview-prep.ai';
 export function aiConfig() {
   try {
     const raw = JSON.parse(localStorage.getItem(AI_KEY) || '{}');
-    return { provider: raw.provider || null, keys: raw.keys || {}, models: raw.models || {}, tts: raw.tts || {} };
+    return { provider: raw.provider || null, keys: raw.keys || {}, models: raw.models || {}, tts: raw.tts || {}, openaiModels: raw.openaiModels || null };
   } catch (_) {
     return { provider: null, keys: {}, models: {}, tts: {} };
   }

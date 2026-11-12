@@ -5,8 +5,9 @@ import { configure } from './speech.js';
 import { $, $$, api, handleCommon, toast } from './ui.js';
 import { renderInput, bindInput } from './view-input.js';
 import { renderAnalysis, onAnalysisAction } from './view-analysis.js';
-import { renderPractice, onPracticeAction, leavePractice } from './view-practice.js';
-import { renderInterview, bindInterviewSetup, onInterviewAction, leaveInterview, renderResult, onResultAction, setNavigator, interviewActive } from './view-interview.js';
+import { renderPractice, onPracticeAction, leavePractice, onPracticeChange } from './view-practice.js';
+import { renderInterview, bindInterviewSetup, onInterviewAction, leaveInterview, renderResult, onResultAction, setNavigator, interviewActive, stopCoach } from './view-interview.js';
+import { loadBank } from './bank.js';
 import { renderReview, onReviewAction, onReviewSubmit, onReviewChange } from './view-review.js';
 import { renderSettings, onSettingsAction, onSettingsSubmit, setSettingsListener, onSettingsChange } from './view-settings.js';
 
@@ -34,6 +35,7 @@ function route() {
   const r = parse();
   if (current.name === 'practice' && r.name !== 'practice') leavePractice();
   if (current.name === 'interview' && r.name !== 'interview' && interviewActive()) leaveInterview();
+  if (current.name === 'result') stopCoach();
   current = r;
 
   // 상단 메뉴 표시
@@ -103,6 +105,11 @@ view.addEventListener('submit', (e) => {
 view.addEventListener('change', (e) => {
   if (parse().name === 'review') onReviewChange(e.target, rerender);
   if (parse().name === 'settings') onSettingsChange(e.target, view);
+  if (parse().name === 'practice') {
+    const r = parse();
+    const p = r.id ? store.project(r.id) : null;
+    if (p) onPracticeChange(e.target, p, go);
+  }
 });
 
 bindInput(view, { go });
@@ -129,6 +136,6 @@ setSettingsListener(refreshStatus);
 
 // 시작
 (async () => {
-  await refreshStatus();
+  await Promise.all([refreshStatus(), loadBank()]);
   route();
 })();

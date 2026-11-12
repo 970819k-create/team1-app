@@ -15,9 +15,10 @@ const { aiEnabled, aiInfo, analyze, feedback, interviewTurn, interviewReport, Ai
 const { basicFeedback, basicTurn, basicReport } = await import('./lib/basic.js');
 const { fetchSource } = await import('./lib/fetch-source.js');
 const { ttsAvailable, synthesize } = await import('./lib/tts.js');
-const { settingsStatus, verifyOnly, KeyError } = await import('./lib/settings.js');
+const { settingsStatus, verifyOnly, openaiModels, KeyError } = await import('./lib/settings.js');
 const { requestConfig, parseConfigHeader, ollamaReachable, ttsConfig, ProviderError, OPENAI_VOICES, OPENAI_TTS_MODELS } = await import('./lib/providers.js');
 const { openaiSpeech } = await import('./lib/tts-openai.js');
+const { questionBank } = await import('./lib/question-bank.js');
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC = path.join(ROOT, 'public');
@@ -101,9 +102,13 @@ const routes = {
 
   'GET /api/sample': async () => structuredClone(SAMPLE),
 
+  // 영어 면접 질문지 (data/english_interview_questions.md)
+  'GET /api/question-bank': async () => ({ categories: questionBank() }),
+
   // AI 설정: 제공자 목록(서버 공용 키 여부)과 키 확인. 키 자체는 브라우저에만 저장한다.
   'GET /api/settings': async () => settingsStatus(),
   'POST /api/settings/verify': async (body) => verifyOnly(body),
+  'POST /api/settings/openai-models': async (body) => openaiModels(body),
 
   // ① 자료 읽기 + ② 분석
   'POST /api/analyze': async (body) => {
@@ -176,7 +181,7 @@ const server = http.createServer(async (req, res) => {
         const t = ttsConfig();
         const engine = body.engine || t.engine || 'piper';
         if (engine === 'openai') {
-          const mp3 = await openaiSpeech(body.text, { voice: body.voice || t.voice, model: body.model || t.model });
+          const mp3 = await openaiSpeech(body.text, { voice: body.voice || t.voice, model: body.model || t.model, role: body.role, lang: body.lang });
           return send(res, 200, mp3, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' });
         }
         if (engine === 'piper' && ttsAvailable()) {
