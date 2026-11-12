@@ -59,7 +59,7 @@ export function renderInterview(view, p) {
             ${Array.from({ length: 10 }, (_, i) => i + 1).map((number) => `
               <label class="interviewer-choice">
                 <input type="radio" name="interviewer" value="${number}" ${number === pref.interviewer ? 'checked' : ''} aria-label="면접관 ${number}">
-                <span class="interviewer-thumbnail"><img src="/images/interviewers/interviewer-${number}.png" alt="" loading="lazy"><span class="interviewer-selected" aria-hidden="true">✓</span></span>
+                <span class="interviewer-thumbnail"><img src="/images/interviewers/interviewer-${number}.webp" alt="" loading="lazy"><span class="interviewer-selected" aria-hidden="true">✓</span></span>
                 <span class="interviewer-number">면접관 ${number}</span>
               </label>`).join('')}
           </div>
@@ -265,9 +265,9 @@ function renderRoom(view, p) {
       </header>
 
       <div class="room-stage">
-        <div class="participant-tile"><div class="participant-name"><span class="participant-dot"></span> AI 면접관</div><img class="participant-portrait" src="/images/interviewers/interviewer-${sim.interviewer}.png" alt="선택한 AI 면접관 ${sim.interviewer}"><div class="participant-label">AI 면접관</div></div>
+        <div class="participant-tile"><div class="participant-name"><span class="participant-dot"></span> AI 면접관</div><img class="participant-portrait" src="/images/interviewers/interviewer-${sim.interviewer}.webp" alt="선택한 AI 면접관 ${sim.interviewer}"><div class="participant-label">AI 면접관</div></div>
         <p class="room-status ${st.cls}" role="status">${st.label}</p>
-        <div class="kkamja-room-tip" aria-label="깜자의 응원"><img src="/images/kkamja-practice.png" alt=""><div><b>깜자</b><p>${sim.status === 'listening' || sim.status === 'waiting' ? '천천히, 내 경험을 떠올리며 말해 보세요.' : sim.status === 'thinking' ? '잠시만요, 면접관이 다음 질문을 준비하고 있어요.' : '질문을 듣고 핵심을 생각해 보세요.'}</p></div></div>
+        <div class="kkamja-room-tip" aria-label="깜자의 응원"><img src="/images/kkamja-practice.webp" alt=""><div><b>깜자</b><p>${sim.status === 'listening' || sim.status === 'waiting' ? '천천히, 내 경험을 떠올리며 말해 보세요.' : sim.status === 'thinking' ? '잠시만요, 면접관이 다음 질문을 준비하고 있어요.' : '질문을 듣고 핵심을 생각해 보세요.'}</p></div></div>
         ${sim.showText && cur ? `<p class="room-caption" lang="en">${esc(cur.text)}</p>` : '<p class="room-caption muted">질문 텍스트를 숨겼어요. 소리로 들어 보세요.</p>'}
         <div class="row gap-s center wrap">
           <button class="btn room-ghost" data-action="sim-replay" ${sim.status === 'thinking' ? 'disabled' : ''}>🔊 질문 다시 듣기</button>
@@ -520,7 +520,7 @@ export function renderResult(view, p, sid) {
     ${r ? `
     <section class="kkamja-talk" id="kkamja-talk" aria-label="깜자의 면접 피드백">
       <div class="kkamja-stage" id="kkamja-stage">
-        <img class="kkamja-speaker" src="/images/kkamja-consultant.png" alt="피드백을 말해 주는 깜자">
+        <img class="kkamja-speaker" src="/images/kkamja-consultant.webp" alt="피드백을 말해 주는 깜자">
         <span class="talk-waves" aria-hidden="true"><i></i><i></i><i></i></span>
       </div>
       <div class="kkamja-bubble">

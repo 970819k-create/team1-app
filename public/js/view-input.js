@@ -1,6 +1,7 @@
 // ① 자료 입력 (+ 내 준비 목록)
 import * as store from './store.js';
 import { $, $$, esc, api, toast, confirmBox, fmtDate } from './ui.js';
+import { installCardHTML } from './install.js';
 
 let companyRows = 1;
 
@@ -29,9 +30,9 @@ export function renderInput(view, status) {
       <section class="desk-main" aria-label="면접 준비 홈">
         <div class="desk-greeting"><span class="desk-date">${new Intl.DateTimeFormat('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' }).format(new Date())}</span><h1>오늘도, 천천히 준비해요.</h1><p>깜자와 함께 나만의 면접을 준비해 보세요.</p></div>
         <section class="quick-actions" aria-label="빠른 시작">
-          <button class="quick-action" data-action="start-input"><span class="quick-icon primary-icon" aria-hidden="true"><img src="/images/kkamja-consultant.png" alt=""></span><b>새 면접 준비</b><small>채용공고로 시작하기</small></button>
-          <button class="quick-action" data-action="sample"><span class="quick-icon sample-icon" aria-hidden="true"><img src="/images/kkamja-practice.png" alt=""></span><b>샘플로 체험</b><small>예시로 먼저 둘러보기</small></button>
-          <a class="quick-action" href="#review"><span class="quick-icon review-icon" aria-hidden="true"><img src="/images/kkamja-review.png" alt=""></span><b>나의 복습</b><small>저장한 표현 살펴보기</small></a>
+          <button class="quick-action" data-action="start-input"><span class="quick-icon primary-icon" aria-hidden="true"><img src="/images/kkamja-consultant.webp" alt=""></span><b>새 면접 준비</b><small>채용공고로 시작하기</small></button>
+          <button class="quick-action" data-action="sample"><span class="quick-icon sample-icon" aria-hidden="true"><img src="/images/kkamja-practice.webp" alt=""></span><b>샘플로 체험</b><small>예시로 먼저 둘러보기</small></button>
+          <a class="quick-action" href="#review"><span class="quick-icon review-icon" aria-hidden="true"><img src="/images/kkamja-review.webp" alt=""></span><b>나의 복습</b><small>저장한 표현 살펴보기</small></a>
         </section>
         <div class="desk-panel-heading"><div><h2>면접 준비</h2><p>지원할 회사를 추가하고 준비를 이어가세요.</p></div><button type="button" class="btn small" data-action="start-input">＋ 새로 만들기</button></div>
     <div class="home-workspace">
@@ -81,7 +82,7 @@ export function renderInput(view, status) {
       </section>
     </div>
       </section>
-      <aside class="desk-side"><div class="desk-side-head"><b>깜자의 준비 노트</b><span>나의 면접 파트너</span></div><div class="desk-coach"><div class="desk-coach-avatar"><img src="/images/kkamja-consultant.png" alt="면접 준비를 도와주는 깜자"></div><h2>준비는 차근차근</h2><p>기업을 이해하고 내 경험을 연결해 보세요. 깜자가 곁에서 함께할게요.</p></div><div class="desk-tip"><span>깜자의 한마디</span><p>좋은 답변은 외우는 것보다<br>나의 이야기를 담는 것부터 시작해요.</p></div><a href="#settings" class="desk-ai-status">${status.ai ? `${esc(status.providerLabel)} 연결됨` : status.problem === 'ollama_offline' ? 'Ollama가 꺼져 있어요' : 'AI 연결 설정하기'} <span>→</span></a></aside>
+      <aside class="desk-side"><div class="desk-side-head"><b>깜자의 준비 노트</b><span>나의 면접 파트너</span></div><div class="desk-coach"><div class="desk-coach-avatar"><img src="/images/kkamja-consultant.webp" alt="면접 준비를 도와주는 깜자"></div><h2>준비는 차근차근</h2><p>기업을 이해하고 내 경험을 연결해 보세요. 깜자가 곁에서 함께할게요.</p></div><div class="desk-tip"><span>깜자의 한마디</span><p>좋은 답변은 외우는 것보다<br>나의 이야기를 담는 것부터 시작해요.</p></div>${installCardHTML()}<a href="#settings" class="desk-ai-status">${status.ai ? `${esc(status.providerLabel)} 연결됨` : status.problem === 'ollama_offline' ? 'Ollama가 꺼져 있어요' : 'AI 연결 설정하기'} <span>→</span></a></aside>
     </div>`;
 }
 

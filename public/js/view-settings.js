@@ -4,6 +4,7 @@
 import * as store from './store.js';
 import { $, esc, api, toast, confirmBox } from './ui.js';
 import { speak, stopSpeaking } from './speech.js';
+import { installCardHTML } from './install.js';
 
 let ttsInfo = { piper: false, voices: [], models: [] };
 
@@ -55,6 +56,7 @@ function draw(view, notes = {}) {
       ${meta.providers.map((p) => card(p, c, cur.id === p.id && ready(p, c), notes[p.id])).join('')}
     </div>
     ${ttsCard(c)}
+    <section class="card">${installCardHTML()}</section>
     <details class="card notice small">
       <summary>키는 어디에 저장되나요?</summary>
       <ul>

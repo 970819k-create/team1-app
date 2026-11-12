@@ -166,7 +166,7 @@ function renderFeedback(p, q) {
   if (!at?.feedback || ctx.retry) { el.innerHTML = ''; return; }
   const f = at.feedback;
   el.innerHTML = `
-    <section class="kkamja-feedback" aria-label="깜자의 답변 피드백"><img src="/images/kkamja-consultant.png" alt=""><div><b>깜자의 피드백</b><p>${esc(f.strengths_ko?.[0] || '답변을 확인했어요. 아래에서 표현과 답변 예시를 함께 살펴봐요.')}</p><span>${f.basic ? '기본 피드백' : '답변을 바탕으로 정리했어요'}</span></div></section>
+    <section class="kkamja-feedback" aria-label="깜자의 답변 피드백"><img src="/images/kkamja-consultant.webp" alt=""><div><b>깜자의 피드백</b><p>${esc(f.strengths_ko?.[0] || '답변을 확인했어요. 아래에서 표현과 답변 예시를 함께 살펴봐요.')}</p><span>${f.basic ? '기본 피드백' : '답변을 바탕으로 정리했어요'}</span></div></section>
     <section class="card feedback">
       <div class="row between wrap gap-s"><h2>피드백</h2>${aiBadge(f.basic)}</div>
       ${f.strengths_ko?.length ? `<h3>잘한 점</h3><ul class="check-list">${f.strengths_ko.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}

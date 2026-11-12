@@ -1,0 +1,8 @@
+# 배포에 필요 없는 것 (디자인 원본 이미지, 점검·도구, 음성 모델)
+assets-src/
+test/
+tools/
+voices/
+docs/
+*.md
+!data/*.md

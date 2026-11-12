@@ -8,6 +8,9 @@ import { renderAnalysis, onAnalysisAction } from './view-analysis.js';
 import { renderPractice, onPracticeAction, leavePractice, onPracticeChange } from './view-practice.js';
 import { renderInterview, bindInterviewSetup, onInterviewAction, leaveInterview, renderResult, onResultAction, setNavigator, interviewActive, stopCoach } from './view-interview.js';
 import { loadBank } from './bank.js';
+import { initInstall, handleInstallAction } from './install.js';
+
+initInstall();
 import { renderReview, onReviewAction, onReviewSubmit, onReviewChange } from './view-review.js';
 import { renderSettings, onSettingsAction, onSettingsSubmit, setSettingsListener, onSettingsChange } from './view-settings.js';
 
@@ -82,6 +85,7 @@ view.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-action]');
   if (!btn || btn.tagName === 'SELECT') return;
   if (handleCommon(btn)) return;
+  if (await handleInstallAction(btn)) return;
   const r = parse();
   const p = r.id ? store.project(r.id) : null;
   if (r.name === 'p' && onAnalysisAction(btn, rerender)) return;
