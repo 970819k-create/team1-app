@@ -129,6 +129,14 @@ test('Hugging Face 기본 모델과 추천 목록', async () => {
   assert.ok(hf.suggestions.length >= 3);
 });
 
+test('키 정리: 보이지 않는 글자는 지우고, 한글이 섞이면 이유를 알림', async () => {
+  const { cleanKey } = await import('../lib/settings.js');
+  assert.equal(cleanKey(' "sk-proj-abc\u200bdef"\n'), 'sk-proj-abcdef');
+  const res = await post('/api/settings/verify', { id: 'openai', key: 'sk-proj-abc한def12345' });
+  assert.equal(res.status, 400);
+  assert.match((await res.json()).error, /한글/);
+});
+
 test('옛 서버 안내: 없는 API는 다시 켜라고 알림', async () => {
   const r = await (await fetch(BASE + '/api/nope')).json();
   assert.equal(r.code, 'unknown_api');

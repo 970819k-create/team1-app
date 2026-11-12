@@ -195,6 +195,19 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+// 예상하지 못한 오류가 나도 서버가 꺼지지 않게 기록만 하고 계속 실행한다
+process.on('uncaughtException', (err) => console.error('[오류]', err));
+process.on('unhandledRejection', (err) => console.error('[오류]', err));
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n  ${PORT}번 포트를 이미 다른 프로그램(또는 이미 켜 둔 서버)이 쓰고 있어요.`);
+    console.error('  이미 켜 둔 서버 창이 있으면 그 창을 쓰거나, 그 창에서 Ctrl + C로 끈 뒤 다시 실행하세요.\n');
+    process.exit(1);
+  }
+  throw err;
+});
+
 server.listen(PORT, () => {
   console.log(`\n  기업 자료 기반 AI 영어 면접 준비`);
   console.log(`  ▶ http://localhost:${PORT}\n`);

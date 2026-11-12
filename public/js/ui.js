@@ -25,22 +25,46 @@ export function toast(msg, ms = 3200) {
 store.setErrorHandler(() => toast('브라우저 저장 공간이 부족해요. 나의 복습 > 데이터 관리에서 오래된 프로젝트를 지워 주세요.', 6000));
 
 /** 이 브라우저에 저장한 AI 설정을 요청 헤더로 보낸다 (서버는 저장하지 않고 그 요청에만 쓴다) */
+const VALID_KEY = /^[\x21-\x7e]+$/;
+const VALID_MODEL = /^[\w.:/-]+$/;
+
 function aiHeader() {
-  const c = store.aiConfig();
+  let c = store.aiConfig();
+  // 예전에 잘못 저장된 키(한글·보이지 않는 글자 포함)는 지우고 알려 준다
+  const bad = Object.keys(c.keys).filter((id) => !VALID_KEY.test(c.keys[id]));
+  const badModels = Object.keys(c.models).filter((id) => !VALID_MODEL.test(c.models[id]));
+  if (bad.length || badModels.length) {
+    c = store.setAiConfig((cfg) => {
+      bad.forEach((id) => { delete cfg.keys[id]; });
+      badModels.forEach((id) => { delete cfg.models[id]; });
+    });
+    if (bad.length) setTimeout(() => toast('저장된 키에 쓸 수 없는 글자가 섞여 있어 지웠어요. [설정]에서 키를 다시 넣어 주세요.', 7000), 0);
+  }
   if (!c.provider && !Object.keys(c.keys).length) return {};
-  return { 'X-AI-Config': btoa(JSON.stringify(c)) };
+  // 영문만 들어가지만, 혹시 모를 글자에도 실패하지 않게 UTF-8로 바꿔 base64로 보낸다
+  const bytes = new TextEncoder().encode(JSON.stringify(c));
+  let bin = '';
+  bytes.forEach((b) => { bin += String.fromCharCode(b); });
+  return { 'X-AI-Config': btoa(bin) };
 }
 
 export async function api(path, body) {
   let res;
+  let extra = {};
   try {
-    res = await fetch(path, body === undefined ? { headers: aiHeader() } : {
+    extra = aiHeader();
+  } catch (_) {
+    store.setAiConfig((cfg) => { cfg.keys = {}; cfg.models = {}; cfg.provider = null; });
+    throw new Error('저장된 AI 설정을 읽지 못해 초기화했어요. [설정]에서 키를 다시 넣어 주세요.');
+  }
+  try {
+    res = await fetch(path, body === undefined ? { headers: extra } : {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...aiHeader() },
+      headers: { 'Content-Type': 'application/json', ...extra },
       body: JSON.stringify(body),
     });
   } catch (_) {
-    throw new Error('서버에 연결하지 못했어요. 터미널에서 서버(npm start)가 켜져 있는지 확인해 주세요.');
+    throw new Error('앱 서버에 연결하지 못했어요. 서버를 켠 검은 창이 닫혔거나 멈췄을 수 있어요. 그 폴더에서 npm start로 다시 켠 뒤 새로고침해 주세요.');
   }
   let data = {};
   try { data = await res.json(); } catch (_) { /* 무시 */ }

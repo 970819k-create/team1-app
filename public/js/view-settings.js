@@ -156,7 +156,8 @@ export async function onSettingsSubmit(form, view) {
   const id = form.dataset.id;
   const p = meta.providers.find((x) => x.id === id);
   const c = store.aiConfig();
-  const typed = $(`#key-${id}`)?.value.trim() || '';
+  // 복사할 때 따라온 공백·보이지 않는 글자·따옴표를 지운다 (한글 등은 서버가 이유를 알려 줌)
+  const typed = ($(`#key-${id}`)?.value || '').replace(/[\s\u200B-\u200F\u2028-\u202F\u2060\uFEFF]/g, '').replace(/^["'`]+|["'`]+$/g, '');
   const key = typed || c.keys[id] || '';
   const model = $(`#model-${id}`).value.trim();
   if (p.needsKey && !key && !p.hasKey) {
