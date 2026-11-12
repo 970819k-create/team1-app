@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>깜자 쇼릴 미리보기</title>
+<link rel="icon" href="../images/kkamja-app-icon.png">
+<style>
+  :root { --bg:#f6f1e7; --panel:#fffaf1; --ink:#16233f; --muted:#5d6577; --line:#e6dccb; --accent:#f3ba4a; --accent-ink:#16233f; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#12151d; --panel:#1b1f2a; --ink:#eef1f8; --muted:#a0a8ba; --line:#2c3242; --accent:#f3ba4a; --accent-ink:#16233f; } }
+  :root[data-theme="dark"] { --bg:#12151d; --panel:#1b1f2a; --ink:#eef1f8; --muted:#a0a8ba; --line:#2c3242; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 "Pretendard", -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif; }
+  main { max-width:1120px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:20px; margin:0 0 2px; }
+  .sub { color:var(--muted); margin:0 0 16px; font-size:14px; }
+  .player { border-radius:14px; overflow:hidden; box-shadow:0 1px 2px #0001, 0 10px 30px #0000001a; background:#fff6e6; }
+  .bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:14px; }
+  button, select { font:inherit; color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:7px 12px; cursor:pointer; }
+  button.primary { background:var(--accent); color:var(--accent-ink); border-color:transparent; font-weight:700; min-width:88px; }
+  .time { font-family:ui-monospace, Menlo, monospace; font-variant-numeric:tabular-nums; min-width:140px; }
+  label.chk { display:inline-flex; gap:6px; align-items:center; color:var(--muted); font-size:14px; cursor:pointer; }
+  .timeline { position:relative; margin-top:18px; padding-top:30px; }
+  .ticks { position:absolute; left:0; right:0; top:0; height:26px; }
+  .tick { position:absolute; top:0; transform:translateX(-1px); border-left:2px solid var(--line); height:26px; padding-left:4px; font-size:11px; color:var(--muted); white-space:nowrap; cursor:pointer; }
+  .tick:hover, .tick.on { color:var(--ink); border-color:var(--accent); }
+  input[type=range] { width:100%; accent-color:var(--accent); margin:0; }
+  .beats { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:8px; margin-top:18px; padding:0; list-style:none; }
+  .beats button { width:100%; text-align:left; display:flex; gap:10px; align-items:baseline; }
+  .beats button.on { border-color:var(--accent); box-shadow:inset 3px 0 0 var(--accent); }
+  .beats .t { font-family:ui-monospace, Menlo, monospace; color:var(--muted); font-size:12px; min-width:44px; }
+  .now { margin-top:14px; font-weight:700; }
+  .help { color:var(--muted); font-size:13px; margin-top:18px; }
+  kbd { font-family:ui-monospace, Menlo, monospace; font-size:12px; border:1px solid var(--line); border-bottom-width:2px; border-radius:5px; padding:0 5px; background:var(--panel); }
+  .log { font-size:13px; color:var(--muted); min-height:20px; margin-top:6px; }
+  body.bare main { max-width:none; padding:0; }
+  body.bare .ui { display:none; }
+  body.bare .player { border-radius:0; box-shadow:none; }
+  @media (max-width:640px) { .tick span { display:none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="ui">
+    <h1>깜자 쇼릴 · 15초</h1>
+    <p class="sub">모션이 어떻게 진행되는지 아래 타임라인으로 바로 확인하세요. 파일을 고치면 이 화면이 같은 시간에서 다시 열립니다.</p>
+  </div>
+  <div class="player" id="player"></div>
+  <div class="ui">
+    <div class="timeline">
+      <div class="ticks" id="ticks"></div>
+      <input type="range" id="scrub" min="0" max="15" step="0.0333333" value="0" aria-label="재생 위치">
+    </div>
+    <div class="bar">
+      <button class="primary" id="play">▶ 재생</button>
+      <span class="time" id="time">0.00s / 15.00s</span>
+      <button id="prev" title="한 프레임 뒤로 (←)">◀ 1프레임</button>
+      <button id="next" title="한 프레임 앞으로 (→)">1프레임 ▶</button>
+      <select id="rate" aria-label="재생 속도">
+        <option value="0.25">0.25배</option><option value="0.5">0.5배</option><option value="1" selected>1배</option><option value="2">2배</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="loop" checked> 반복</label>
+      <label class="chk"><input type="checkbox" id="voice"> 깜자 목소리</label>
+      <label class="chk"><input type="checkbox" id="hud" checked> HUD</label>
+      <label class="chk"><input type="checkbox" id="live" checked> 저장하면 자동 새로고침</label>
+    </div>
+    <div class="now" id="now"></div>
+    <div class="log" id="log"></div>
+    <ul class="beats" id="beats"></ul>
+    <p class="help"><kbd>Space</kbd> 재생/정지 · <kbd>←</kbd><kbd>→</kbd> 1프레임 · <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 1초 · <kbd>[</kbd><kbd>]</kbd> 이전/다음 비트 · 주소에 <code>?t=8.1</code>을 붙이면 그 순간에서 멈춰 열립니다.</p>
+  </div>
+</main>
+<script type="module">
+  const MOD = './kkamja-showreel.js';
+  const { createKkamjaShowreel, BEATS, DURATION, FPS } = await import(MOD + '?v=' + Date.now());
+  const q = new URLSearchParams(location.search);
+  const bare = q.has('bare');
+  if (bare) document.body.classList.add('bare');
+  const $ = id => document.getElementById(id);
+  const hudOn = q.get('hud') !== '0';
+  $('hud').checked = hudOn;
+
+  const reel = createKkamjaShowreel($('player'), {
+    hud: hudOn,
+    assetBase: q.get('assets') || '../images/',
+    loop: !bare,
+    respectReducedMotion: !bare,
+  });
+  // 렌더러(tools/render-showreel.mjs)가 쓰는 입구
+  window.__reel = reel;
+  window.__seek = t => reel.seek(t);
+  window.__duration = DURATION;
+  window.__ready = reel.ready;
+  if (bare) { await reel.ready; reel.seek(Number(q.get('t')) || 0); }
+  else {
+    const fmt = t => `${t.toFixed(2)}s / ${DURATION.toFixed(2)}s`;
+    const beatAt = t => { let i = 0; BEATS.forEach((b, j) => { if (t >= b.t) i = j; }); return i; };
+    $('ticks').innerHTML = BEATS.map((b, i) => `<div class="tick" data-i="${i}" style="left:${(b.t / DURATION) * 100}%" title="${b.t.toFixed(2)}s ${b.name}"><span>${i + 1}</span></div>`).join('');
+    $('beats').innerHTML = BEATS.map((b, i) => `<li><button data-i="${i}"><span class="t">${b.t.toFixed(2)}s</span><span>${i + 1}. ${b.name}</span></button></li>`).join('');
+    const ticks = [...$('ticks').children], beatBtns = [...$('beats').querySelectorAll('button')];
+    let lastBeat = -1;
+    function update(t) {
+      $('scrub').value = t;
+      $('time').textContent = fmt(t);
+      const i = beatAt(t);
+      if (i !== lastBeat) {
+        ticks.forEach((el, j) => el.classList.toggle('on', j === i));
+        beatBtns.forEach((el, j) => el.classList.toggle('on', j === i));
+        $('now').textContent = `지금: ${i + 1}. ${BEATS[i].name}`;
+        lastBeat = i;
+      }
+      const u = new URL(location); u.searchParams.set('t', t.toFixed(2)); history.replaceState(null, '', u);
+    }
+    reel.on('time', update);
+    reel.on('play', () => { $('play').textContent = '⏸ 정지'; });
+    reel.on('pause', () => { $('play').textContent = '▶ 재생'; });
+    reel.on('say', () => {
+      $('log').textContent = `${new Date().toLocaleTimeString()} · 깜자: "easy 면접" (say 이벤트)`;
+      if ($('voice').checked && 'speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance('이지 면접'); u.lang = 'ko-KR'; u.rate = 1.05; u.pitch = 1.3;
+        speechSynthesis.cancel(); speechSynthesis.speak(u);
+      }
+    });
+    const seek = t => { reel.pause(); reel.seek(Math.max(0, Math.min(DURATION, t))); };
+    $('play').onclick = () => reel.toggle();
+    $('scrub').oninput = e => seek(Number(e.target.value));
+    $('prev').onclick = () => seek(Math.round(reel.time * FPS - 1) / FPS);
+    $('next').onclick = () => seek(Math.round(reel.time * FPS + 1) / FPS);
+    $('rate').onchange = e => { reel.rate = Number(e.target.value); };
+    $('loop').onchange = e => { reel.loop = e.target.checked; };
+    $('hud').onchange = e => { const u = new URL(location); u.searchParams.set('hud', e.target.checked ? '1' : '0'); location.href = u; };
+    $('ticks').onclick = e => { const el = e.target.closest('.tick'); if (el) seek(BEATS[el.dataset.i].t); };
+    $('beats').onclick = e => { const el = e.target.closest('button'); if (el) seek(BEATS[el.dataset.i].t); };
+    addEventListener('keydown', e => {
+      if (e.target.closest('select')) return;
+      const f = 1 / FPS, i = beatAt(reel.time);
+      if (e.key === ' ') { e.preventDefault(); reel.toggle(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); seek(reel.time - (e.shiftKey ? 1 : f)); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); seek(reel.time + (e.shiftKey ? 1 : f)); }
+      else if (e.key === '[') seek(BEATS[Math.max(0, reel.time - BEATS[i].t > 0.05 ? i : i - 1)].t);
+      else if (e.key === ']') seek(BEATS[Math.min(BEATS.length - 1, i + 1)].t);
+    });
+    await reel.ready;
+    if (q.has('t')) seek(Number(q.get('t'))); else { reel.seek(0); reel.play(); }
+    update(reel.time);
+
+    // 저장하면 자동 새로고침: 모듈 파일 내용이 바뀌면 지금 시간 그대로 다시 연다
+    let prevText = null;
+    async function poll() {
+      if ($('live').checked && location.protocol.startsWith('http')) {
+        try {
+          const txt = await (await fetch(MOD, { cache: 'no-store' })).text();
+          if (prevText !== null && txt !== prevText) { const u = new URL(location); u.searchParams.set('t', reel.time.toFixed(2)); location.replace(u); return; }
+          prevText = txt;
+        } catch {}
+      }
+      setTimeout(poll, 1000);
+    }
+    poll();
+  }
+</script>
+</body>
+</html>

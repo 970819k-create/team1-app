@@ -33,6 +33,8 @@ const TYPES = {
   '.png': 'image/png',
   '.json': 'application/json; charset=utf-8',
   '.ico': 'image/x-icon',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
 };
 
 function send(res, status, body, headers = {}) {
