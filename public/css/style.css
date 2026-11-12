@@ -682,3 +682,88 @@ body.in-room .view { padding-top:18px; }
 @media(max-width:860px) { .view { padding:0 16px 50px; }.desk-layout { grid-template-columns:1fr; }.desk-main { padding:35px 12px; }.desk-side { border-left:0; border-top:1px solid #e5e6e1; padding:24px; }.desk-coach { display:flex; align-items:center; text-align:left; gap:14px; padding:16px 0; }.desk-coach-avatar { width:72px; height:72px; margin:0; flex:none; }.desk-coach-avatar img { width:70px; height:70px; }.desk-coach h2 { margin:0; white-space:nowrap; }.desk-coach p { margin:0; }.desk-tip { display:none; }.desk-ai-status { margin-top:5px; } }
 @media(max-width:560px) { .topbar-inner { padding:0 10px; min-height:65px; gap:5px; }.brand { min-width:0; font-size:14px; gap:4px; }.brand-mark { width:34px; height:34px; }.topnav { gap:0; }.topnav a { min-width:auto; padding:7px 8px; font-size:11px; }.nav-icon { display:block; font-size:18px; }.topbar #ai-status { min-width:0; max-width:76px; font-size:10px; }.desk-main { padding:28px 0; }.desk-greeting { margin-bottom:20px; }.quick-actions { grid-template-columns:repeat(3,1fr); margin-bottom:28px; }.quick-action { min-height:100px; }.quick-icon { width:52px; height:52px; }.quick-action small { display:none; }.desk-panel-heading { padding:14px; }.desk-panel-heading p { display:none; }.desk-coach p { display:none; }.desk-side { padding:20px 12px; } }
 .home-workspace { align-items:stretch; }
+
+/* =====================================================================
+   깜자 빠른 시작 버튼 (새 면접 준비 · 샘플로 체험 · 나의 복습)
+   - 글자 없이 '누를 수 있다'는 걸 알리기: 카드 모양 + 깜자가 가끔 통통 움직임
+     + 마우스를 올리면 카드가 떠오르고 깜자가 폴짝 + 누르면 꾹 눌림
+   - 깜자 아래 제목·설명 가운데 정렬, 깜자와 글씨를 더 크고 진하게
+   ===================================================================== */
+.quick-actions { max-width: 700px; gap: 16px; }
+.quick-actions .quick-action {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  text-align: center; gap: 6px; min-height: 0; padding: 20px 12px 18px;
+  background: #fffefa; border: 1px solid #e7e1cf; border-radius: 22px;
+  box-shadow: 0 3px 0 #ebe3cc, 0 10px 24px rgba(70, 55, 20, .07);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background-color .18s ease;
+}
+.quick-actions .quick-action b,
+.quick-actions .quick-action small { align-self: center; margin: 0; }
+.quick-actions .quick-action b { margin-top: 8px; font-size: 16px; font-weight: 800; color: #1d2838; letter-spacing: -0.01em; }
+.quick-actions .quick-action small { display: block; font-size: 12.5px; font-weight: 500; color: #4a5566; word-break: keep-all; }
+.quick-actions .quick-icon {
+  position: relative; width: 100px; height: 100px; margin: 0; border-radius: 30px;
+  grid-row: auto; align-self: center; overflow: visible; background: #f6ebd5;
+}
+.quick-actions .quick-icon img {
+  position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain;
+  transform-origin: 50% 90%; animation: kkamja-idle 3.4s ease-in-out infinite;
+}
+/* 깜자 발밑 그림자: 뛸 때 작아져서 '움직이는 캐릭터'로 보이게 */
+.quick-actions .quick-icon::after {
+  content: ""; position: absolute; left: 50%; bottom: -7px; width: 52px; height: 9px; border-radius: 50%;
+  background: rgba(90, 70, 25, .14); transform: translateX(-50%); animation: kkamja-shadow 3.4s ease-in-out infinite;
+}
+/* 세 깜자가 동시에 움직이지 않게 시간차 */
+.quick-actions .quick-action:nth-child(2) .quick-icon img,
+.quick-actions .quick-action:nth-child(2) .quick-icon::after { animation-delay: .6s; }
+.quick-actions .quick-action:nth-child(3) .quick-icon img,
+.quick-actions .quick-action:nth-child(3) .quick-icon::after { animation-delay: 1.2s; }
+
+.quick-actions .quick-action:hover {
+  transform: translateY(-5px); background: #fff; border-color: #cbb987;
+  box-shadow: 0 3px 0 #e4d8b8, 0 16px 32px rgba(70, 55, 20, .14);
+}
+.quick-actions .quick-action:hover .quick-icon img { animation: kkamja-hop .62s ease-in-out infinite; }
+.quick-actions .quick-action:hover .quick-icon::after { animation: kkamja-hop-shadow .62s ease-in-out infinite; }
+.quick-actions .quick-action:hover b { color: #3f6a2c; }
+.quick-actions .quick-action:active { transform: translateY(1px) scale(.97); box-shadow: 0 1px 0 #e4d8b8, 0 4px 10px rgba(70, 55, 20, .1); }
+.quick-actions .quick-action:focus-visible { outline: 3px solid #7d9a4f; outline-offset: 3px; }
+
+@keyframes kkamja-idle {
+  0%, 68%, 100% { transform: scale(1.18) translateY(0) rotate(0deg); }
+  76% { transform: scale(1.18) translateY(-8px) rotate(-4deg); }
+  84% { transform: scale(1.18) translateY(0) rotate(3deg); }
+  91% { transform: scale(1.18) translateY(-3px) rotate(0deg); }
+}
+@keyframes kkamja-shadow {
+  0%, 68%, 100% { width: 52px; opacity: 1; }
+  76% { width: 36px; opacity: .55; }
+  84% { width: 52px; opacity: 1; }
+  91% { width: 46px; opacity: .8; }
+}
+@keyframes kkamja-hop {
+  0%, 100% { transform: scale(1.24) translateY(0) rotate(0deg); }
+  40% { transform: scale(1.24) translateY(-12px) rotate(-5deg); }
+  70% { transform: scale(1.24) translateY(0) rotate(4deg); }
+}
+@keyframes kkamja-hop-shadow {
+  0%, 100% { width: 54px; opacity: 1; }
+  40% { width: 32px; opacity: .45; }
+  70% { width: 54px; opacity: 1; }
+}
+
+@media (max-width: 560px) {
+  .quick-actions { gap: 8px; }
+  .quick-actions .quick-action { padding: 14px 6px 12px; border-radius: 18px; }
+  .quick-actions .quick-icon { width: 66px; height: 66px; border-radius: 22px; }
+  .quick-actions .quick-icon::after { width: 36px; height: 7px; bottom: -6px; }
+  .quick-actions .quick-action b { margin-top: 6px; font-size: 13px; }
+  .quick-actions .quick-action small { display: block; font-size: 11px; line-height: 1.35; }
+}
+/* 움직임 줄이기 설정을 켠 사용자에게는 애니메이션 없이 모양으로만 표시 */
+@media (prefers-reduced-motion: reduce) {
+  .quick-actions .quick-icon img, .quick-actions .quick-icon::after { animation: none !important; transform: scale(1.18); }
+  .quick-actions .quick-action, .quick-actions .quick-action:hover { transition: none; }
+}
