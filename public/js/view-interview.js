@@ -51,7 +51,19 @@ export function renderInterview(view, p) {
           : '<p class="alert info small">이 브라우저는 음성 인식을 지원하지 않아 키보드로 답하게 돼요. Chrome이나 Edge에서는 음성으로 답할 수 있어요.</p>'}
       </section>
       <form class="card form" id="sim-setup">
-        <h2>설정</h2>
+        <h2>면접 설정</h2>
+        <fieldset class="interviewer-picker">
+          <legend>면접관 선택</legend>
+          <p class="small muted">실전 면접에 함께할 면접관을 선택해 주세요.</p>
+          <div class="interviewer-grid">
+            ${Array.from({ length: 10 }, (_, i) => i + 1).map((number) => `
+              <label class="interviewer-choice">
+                <input type="radio" name="interviewer" value="${number}" ${number === 1 ? 'checked' : ''} aria-label="면접관 ${number}">
+                <span class="interviewer-thumbnail"><img src="/images/interviewers/interviewer-${number}.png" alt="" loading="lazy"><span class="interviewer-selected" aria-hidden="true">✓</span></span>
+                <span class="interviewer-number">면접관 ${number}</span>
+              </label>`).join('')}
+          </div>
+        </fieldset>
         <label class="field-label" for="sim-count">메인 질문 수</label>
         <select id="sim-count" class="input">
           ${Array.from({ length: n }, (_, i) => i + 1).filter((k) => k >= Math.min(3, n)).map((k) => `<option value="${k}" ${k === def ? 'selected' : ''}>${k}개 (약 ${k * 2 + 2}~${k * 3 + 2}분)</option>`).join('')}
@@ -69,6 +81,7 @@ export function bindInterviewSetup(view, p) {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     startSim(p, {
+      interviewer: Number(form.querySelector('input[name="interviewer"]:checked')?.value) || 1,
       count: Number($('#sim-count', form).value),
       showText: $('#sim-text', form).checked,
       keyboard: $('#sim-keyboard', form).checked || !sttSupported,
@@ -87,10 +100,11 @@ function startSim(p, opts) {
   const greeting = `Hello, and thank you for joining us today. This is the English interview${role ? ` for the ${role} position` : ''}${company ? ` at ${company}` : ''}. Let's begin. ${plan[0].en}`;
   sim = {
     pid: p.id, phase: 'room', plan, mainIdx: 0, followUps: 0,
-    showText: opts.showText, keyboard: opts.keyboard,
+    showText: opts.showText, keyboard: opts.keyboard, interviewer: opts.interviewer,
     transcript: [], startedAt: Date.now(), status: 'speaking',
     draft: '', interim: '', listener: null, timer: null, sessionId: store.uid('s'),
   };
+  document.body.classList.add('in-room');
   sim.transcript.push({ role: 'interviewer', text: greeting, ko: `안녕하세요, 오늘 와 주셔서 감사합니다. 영어 면접을 시작하겠습니다. ${plan[0].ko}`, kind: 'main', qid: plan[0].id });
   store.logEvent('sim_start', p.id);
   sim.timer = setInterval(() => {
@@ -120,8 +134,9 @@ function renderRoom(view, p) {
       </header>
 
       <div class="room-stage">
-        <div class="avatar ${st.cls}" aria-hidden="true"><span>AI</span><i></i><i></i><i></i></div>
+        <div class="participant-tile"><div class="participant-name"><span class="participant-dot"></span> AI 면접관</div><img class="participant-portrait" src="/images/interviewers/interviewer-${sim.interviewer}.png" alt="선택한 AI 면접관 ${sim.interviewer}"><div class="participant-label">AI 면접관</div></div>
         <p class="room-status ${st.cls}" role="status">${st.label}</p>
+        <div class="kkamja-room-tip" aria-label="깜자의 응원"><img src="/images/kkamja-practice.png" alt=""><div><b>깜자</b><p>${sim.status === 'listening' || sim.status === 'waiting' ? '천천히, 내 경험을 떠올리며 말해 보세요.' : sim.status === 'thinking' ? '잠시만요, 면접관이 다음 질문을 준비하고 있어요.' : '질문을 듣고 핵심을 생각해 보세요.'}</p></div></div>
         ${sim.showText && cur ? `<p class="room-caption" lang="en">${esc(cur.text)}</p>` : '<p class="room-caption muted">질문 텍스트를 숨겼어요. 소리로 들어 보세요.</p>'}
         <div class="row gap-s center wrap">
           <button class="btn room-ghost" data-action="sim-replay" ${sim.status === 'thinking' ? 'disabled' : ''}>🔊 질문 다시 듣기</button>
@@ -129,7 +144,7 @@ function renderRoom(view, p) {
         </div>
       </div>
 
-      <div class="room-answer">
+      <div class="room-answer"><div class="room-answer-heading"><span>내 답변</span><span class="room-answer-hint">마이크와 답변을 확인하세요</span></div>
         ${sim.status === 'thinking' ? '<p class="muted center"><span class="spinner"></span> 잠시만 기다려 주세요…</p>' : ''}
         ${canAnswer && !sim.keyboard ? `
           <div class="mic ${sim.status === 'listening' ? 'on' : ''}">
@@ -324,6 +339,7 @@ export async function onInterviewAction(btn, p) {
 
 export function leaveInterview() {
   if (!sim) return;
+  document.body.classList.remove('in-room');
   clearInterval(sim.timer);
   sim.listener?.abort();
   stopSpeaking();
@@ -365,7 +381,7 @@ export function renderResult(view, p, sid) {
     ${s.pairs.length && !r ? `<section class="card" id="report-status">
       ${reportLoading.has(sid) ? '<p><span class="spinner"></span> 답변 예시와 개선할 표현을 만드는 중… (30초 정도)</p>' : '<p>결과를 만들지 못했어요.</p><button class="btn primary" data-action="report-retry">결과 다시 만들기</button>'}
     </section>` : ''}
-    ${r ? `<section class="card accent"><div class="row between wrap gap-s"><h2>총평</h2>${aiBadge(r.basic)}</div><p>${esc(r.overall_ko)}</p></section>` : ''}
+    ${r ? `<section class="kkamja-feedback" aria-label="깜자의 면접 피드백"><img src="/images/kkamja-consultant.png" alt=""><div><b>깜자의 피드백</b><p>${esc(r.overall_ko)}</p><span>${r.basic ? '기본 피드백' : '면접 결과를 바탕으로 정리했어요'}</span></div></section>` : ''}
 
     <ol class="result-list">
       ${s.pairs.map((pair, i) => {

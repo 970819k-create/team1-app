@@ -25,18 +25,20 @@ export function renderInput(view, status) {
   companyRows = 1;
   const list = store.projects();
   view.innerHTML = `
-    <section class="hero">
-      <h1>지원할 회사의 공고로<br>영어 면접을 준비하세요</h1>
-      <p class="muted">채용공고와 기업 자료를 넣으면 핵심을 한글·영어로 정리하고, 그 내용으로 영어 면접 질문을 만들어 AI 면접관과 연습해요.</p>
-      <div class="row wrap gap">
-        <a class="badge ${status.ai ? 'ai' : 'warn'}" href="#settings">${status.ai ? `${esc(status.providerLabel)} 연결됨 · 바꾸기` : status.problem === 'ollama_offline' ? 'Ollama가 꺼져 있어요 · 설정에서 다른 AI 고르기' : 'AI 미연결 · 설정에서 연결하기'}</a>
-        <button class="btn ghost" data-action="sample">샘플로 체험하기</button>
-      </div>
-    </section>
-
-    <div class="grid-2">
+    <div class="desk-layout">
+      <section class="desk-main" aria-label="면접 준비 홈">
+        <div class="desk-greeting"><span class="desk-date">${new Intl.DateTimeFormat('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' }).format(new Date())}</span><h1>오늘도, 천천히 준비해요.</h1><p>깜자와 함께 나만의 면접을 준비해 보세요.</p></div>
+        <section class="quick-actions" aria-label="빠른 시작">
+          <button class="quick-action" data-action="start-input"><span class="quick-icon primary-icon" aria-hidden="true"><img src="/images/kkamja-consultant.png" alt=""></span><b>새 면접 준비</b><small>채용공고로 시작하기</small></button>
+          <button class="quick-action" data-action="sample"><span class="quick-icon sample-icon" aria-hidden="true"><img src="/images/kkamja-practice.png" alt=""></span><b>샘플로 체험</b><small>예시로 먼저 둘러보기</small></button>
+          <a class="quick-action" href="#review"><span class="quick-icon review-icon" aria-hidden="true"><img src="/images/kkamja-review.png" alt=""></span><b>나의 복습</b><small>저장한 표현 살펴보기</small></a>
+        </section>
+        <div class="desk-panel-heading"><div><h2>면접 준비</h2><p>지원할 회사를 추가하고 준비를 이어가세요.</p></div><button type="button" class="btn small" data-action="start-input">＋ 새로 만들기</button></div>
+    <div class="home-workspace">
+      <details class="input-drawer" id="input-drawer"><summary>새 면접 준비를 위한 자료 입력</summary>
       <form id="input-form" class="card form" novalidate>
-        <h2>① 자료 입력</h2>
+        <div class="form-heading"><div><span class="form-icon" aria-hidden="true">↗</span><h2>자료 입력</h2></div><span class="form-caption">링크 또는 텍스트</span></div>
+        <p class="form-intro">지원할 포지션을 알려주세요. 공고에 맞는 질문을 준비해 드릴게요.</p>
         ${sourceField('job', '채용공고', { required: true })}
         <div id="company-list">
           ${sourceField('company0', '기업 관련 기사·자료')}
@@ -58,14 +60,15 @@ export function renderInput(view, status) {
           <summary>입력한 정보는 어떻게 쓰이나요?</summary>
           <ul>
             <li>자료, 분석 결과, 답변 텍스트는 <b>이 브라우저에만</b> 저장되고 언제든 삭제할 수 있어요.</li>
-            <li>분석·피드백을 만들 때 자료와 답변 텍스트가 AI 제공업체(Anthropic API)로 전송돼요.</li>
+            <li>분석·피드백을 만들 때 자료와 답변 텍스트가 설정에서 선택한 AI 제공업체로 전송돼요.</li>
             <li>음성 원본은 저장하지 않아요. 음성 인식은 브라우저 기능을 쓰며, Chrome은 인식을 위해 음성을 Google 서버로 보낼 수 있어요.</li>
           </ul>
         </details>
       </form>
+      </details>
 
-      <section class="card">
-        <h2>내 면접 준비</h2>
+      <section class="card home-projects">
+        <div class="projects-heading"><div><span class="section-kicker">RECENT</span><h2>최근 면접 준비</h2></div><span class="projects-count">${list.length}</span></div>
         ${list.length ? `<ul class="project-list">${list.map((p) => `
           <li>
             <a href="#p/${esc(p.id)}" class="project-item">
@@ -74,8 +77,11 @@ export function renderInput(view, status) {
             </a>
             <button class="icon-btn" data-action="delete-project" data-id="${esc(p.id)}" aria-label="${esc(p.name)} 삭제" title="삭제">🗑</button>
           </li>`).join('')}</ul>`
-          : '<p class="muted">아직 준비 중인 회사가 없어요. 왼쪽에 자료를 넣거나 샘플로 시작해 보세요.</p>'}
+          : '<div class="project-empty"><div class="project-empty-icon" aria-hidden="true">✧</div><b>첫 면접 준비를 시작해 볼까요?</b><p class="muted">공고를 입력하면 이곳에서<br>면접 준비를 이어갈 수 있어요.</p></div>'}
       </section>
+    </div>
+      </section>
+      <aside class="desk-side"><div class="desk-side-head"><b>깜자의 준비 노트</b><span>나의 면접 파트너</span></div><div class="desk-coach"><div class="desk-coach-avatar"><img src="/images/kkamja-consultant.png" alt="면접 준비를 도와주는 깜자"></div><h2>준비는 차근차근</h2><p>기업을 이해하고 내 경험을 연결해 보세요. 깜자가 곁에서 함께할게요.</p></div><div class="desk-tip"><span>깜자의 한마디</span><p>좋은 답변은 외우는 것보다<br>나의 이야기를 담는 것부터 시작해요.</p></div><a href="#settings" class="desk-ai-status">${status.ai ? `${esc(status.providerLabel)} 연결됨` : status.problem === 'ollama_offline' ? 'Ollama가 꺼져 있어요' : 'AI 연결 설정하기'} <span>→</span></a></aside>
     </div>`;
 }
 
@@ -127,6 +133,7 @@ export function bindInput(view, { go }) {
     const form = $('#input-form', view);
     if (!btn || (!form && btn.dataset.action !== 'sample')) return;
     switch (btn.dataset.action) {
+      case 'start-input': $('#input-drawer', view).open = true; form.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('#job-url', form).focus({ preventScroll: true }); break;
       case 'mode': setMode(form, btn.dataset.target, btn.dataset.mode); break;
       case 'add-company': {
         if ($$('#company-list [data-field]', form).length >= 4) { toast('기업 자료는 4개까지 넣을 수 있어요.'); break; }
