@@ -102,6 +102,7 @@ export function renderAnalysis(view, p) {
       </div>
 
       <aside class="side stack">
+        <section class="card coach-tip"><img src="/images/kkamja-consultant.png" alt=""><div><span>깜자의 준비 팁</span><p>분석한 내용을 나의 경험과 연결해서 말해 보세요.</p></div></section>
         <section class="card cta">
           <h2>③ AI 면접 시작</h2>
           <a class="mode-card" href="#practice/${esc(id)}">

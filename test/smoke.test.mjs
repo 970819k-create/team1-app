@@ -35,7 +35,7 @@ test('모든 자바스크립트 파일 문법', () => {
 
 test('화면 파일 제공', async () => {
   const html = await (await fetch(BASE + '/')).text();
-  assert.match(html, /인터뷰 브리프/);
+  assert.match(html, /쉬었음 깜자/);
   for (const f of ['/js/app.js', '/css/style.css', '/favicon.svg']) assert.equal((await fetch(BASE + f)).status, 200, f);
 });
 
@@ -89,3 +89,4 @@ test('다른 사이트에서는 AI 설정을 바꿀 수 없음', async () => {
   const res = await post('/api/settings/active', { id: 'openai' }, { Origin: 'http://evil.example' });
   assert.equal(res.status, 403);
 });
+
