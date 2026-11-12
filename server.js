@@ -6,7 +6,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
-try { process.loadEnvFile(path.join(ROOT, '.env')); } catch { /* .env 없음 */ }
+// IGNORE_DOTENV=1이면 .env를 읽지 않는다 (자동 점검에서 실제 키로 AI를 부르지 않게)
+if (process.env.IGNORE_DOTENV !== '1') {
+  try { process.loadEnvFile(path.join(ROOT, '.env')); } catch { /* .env 없음 */ }
+}
 
 const { aiEnabled, aiInfo, analyze, feedback, interviewTurn, interviewReport, AiError } = await import('./lib/ai.js');
 const { basicFeedback, basicTurn, basicReport } = await import('./lib/basic.js');

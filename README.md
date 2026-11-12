@@ -46,6 +46,15 @@ curl -L -O https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/rya
 
 서버를 다시 켜면 `면접관 음성: Piper 음성 사용`으로 바뀝니다.
 
+### 자동 점검
+
+```bash
+npm test
+```
+
+서버를 따로 띄워 화면 파일, API, AI 미연결 시 기본 동작, 보안 차단(폴더 밖 파일, 다른 사이트의 설정 변경)을 확인합니다.
+`.env`의 실제 키는 쓰지 않으므로 요금이 들지 않습니다.
+
 ## 화면 (PRD 4장)
 
 | 화면 | 주소 | 내용 |
