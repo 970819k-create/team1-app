@@ -1,0 +1,18 @@
+{
+  "name": "interview-prep",
+  "version": "0.1.0",
+  "private": true,
+  "description": "기업 자료 기반 AI 영어 면접 준비 (MVP)",
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "zod": "^4.6.7"
+  }
+}

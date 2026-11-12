@@ -1,0 +1,183 @@
+// 기업 자료 기반 AI 영어 면접 준비 — 로컬 서버
+// 실행: npm start  →  http://localhost:3000
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.dirname(fileURLToPath(import.meta.url));
+try { process.loadEnvFile(path.join(ROOT, '.env')); } catch { /* .env 없음 */ }
+
+const { aiEnabled, analyze, feedback, interviewTurn, interviewReport, AiError, MODEL } = await import('./lib/ai.js');
+const { basicFeedback, basicTurn, basicReport } = await import('./lib/basic.js');
+const { fetchSource } = await import('./lib/fetch-source.js');
+const { ttsAvailable, synthesize } = await import('./lib/tts.js');
+
+const PORT = Number(process.env.PORT || 3000);
+const PUBLIC = path.join(ROOT, 'public');
+const SAMPLE = JSON.parse(fs.readFileSync(path.join(ROOT, 'samples', 'sample-project.json'), 'utf8'));
+const MAX_BODY = 2 * 1024 * 1024;
+const MIN_TOTAL_CHARS = 200;
+
+const TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.json': 'application/json; charset=utf-8',
+  '.ico': 'image/x-icon',
+};
+
+function send(res, status, body, headers = {}) {
+  const isBuf = Buffer.isBuffer(body);
+  res.writeHead(status, {
+    'Content-Type': isBuf ? 'application/octet-stream' : 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store',
+    ...headers,
+  });
+  res.end(isBuf ? body : JSON.stringify(body));
+}
+
+function readJson(req) {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks = [];
+    req.on('data', (c) => {
+      size += c.length;
+      if (size > MAX_BODY) {
+        reject(Object.assign(new Error('입력이 너무 커요. 자료를 줄여 주세요.'), { status: 413 }));
+        req.destroy();
+      } else chunks.push(c);
+    });
+    req.on('end', () => {
+      try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch { reject(Object.assign(new Error('요청 형식이 올바르지 않아요.'), { status: 400 })); }
+    });
+    req.on('error', reject);
+  });
+}
+
+function serveStatic(req, res) {
+  const url = new URL(req.url, 'http://x');
+  let p = decodeURIComponent(url.pathname);
+  if (p === '/') p = '/index.html';
+  const file = path.normalize(path.join(PUBLIC, p));
+  if (!file.startsWith(PUBLIC)) return send(res, 403, { error: 'forbidden' });
+  fs.readFile(file, (err, data) => {
+    if (err) {
+      // 화면 주소는 모두 index.html이 처리한다
+      return fs.readFile(path.join(PUBLIC, 'index.html'), (e2, html) => {
+        if (e2) return send(res, 404, { error: 'not found' });
+        res.writeHead(200, { 'Content-Type': TYPES['.html'] });
+        res.end(html);
+      });
+    }
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    res.end(data);
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* API                                                                 */
+/* ------------------------------------------------------------------ */
+
+const routes = {
+  'GET /api/status': async () => ({ ai: aiEnabled(), model: aiEnabled() ? MODEL : null, tts: ttsAvailable() }),
+
+  'GET /api/sample': async () => structuredClone(SAMPLE),
+
+  // ① 자료 읽기 + ② 분석
+  'POST /api/analyze': async (body) => {
+    const inputs = [];
+    if (body.job?.url || body.job?.text) inputs.push({ kind: 'job', ...body.job });
+    for (const c of body.company || []) if (c?.url || c?.text) inputs.push({ kind: 'company', ...c });
+    if (!inputs.some((i) => i.kind === 'job')) throw Object.assign(new Error('채용공고 링크나 본문을 넣어 주세요.'), { status: 400 });
+
+    // 링크 읽기 (텍스트를 직접 넣었으면 그 텍스트를 우선 사용)
+    const sources = await Promise.all(inputs.map(async (inp, i) => {
+      const id = `S${i + 1}`;
+      const text = (inp.text || '').trim();
+      if (text) return { id, kind: inp.kind, url: inp.url || '', title: inp.url ? '' : '직접 입력한 텍스트', status: 'ok', text: text.slice(0, 30000) };
+      const r = await fetchSource(inp.url);
+      return { id, kind: inp.kind, url: inp.url, title: r.title || inp.url, status: r.status, text: r.text, message: r.message };
+    }));
+
+    const usable = sources.filter((s) => s.status !== 'failed' && s.text);
+    const total = usable.reduce((n, s) => n + s.text.length, 0);
+    const jobOk = usable.some((s) => s.kind === 'job');
+    if (!jobOk || total < MIN_TOTAL_CHARS) {
+      return {
+        ok: false,
+        reason: 'not_enough',
+        message: !jobOk ? '채용공고 내용을 읽지 못했어요. 공고 본문을 복사해 텍스트로 붙여넣어 주세요.' : '읽은 자료가 너무 적어 분석할 수 없어요. 본문을 텍스트로 붙여넣어 주세요.',
+        sources: sources.map(({ text, ...s }) => ({ ...s, chars: text?.length || 0 })),
+      };
+    }
+    if (!aiEnabled()) {
+      return {
+        ok: false,
+        reason: 'no_ai',
+        message: 'AI가 연결되지 않아 새 자료를 분석할 수 없어요. README의 "API 키 설정"을 따라 키를 넣고 서버를 다시 켜 주세요. 키 없이도 [샘플로 체험하기]로 전체 흐름을 써 볼 수 있어요.',
+        sources: sources.map(({ text, ...s }) => ({ ...s, chars: text?.length || 0 })),
+      };
+    }
+    const analysis = await analyze({ sources: usable, role: body.role, experience: body.experience });
+    return { ok: true, sources, analysis };
+  },
+
+  // ③-A 질문별 연습 피드백
+  'POST /api/feedback': async (body) => {
+    const { project, question, answer } = body;
+    if (!answer?.trim()) throw Object.assign(new Error('답변 내용이 비어 있어요.'), { status: 400 });
+    if (!aiEnabled()) return basicFeedback({ project, question, answer });
+    return feedback({ project, question, answer, previous: body.previous });
+  },
+
+  // ③-B 실전 면접 다음 발화
+  'POST /api/interview/turn': async (body) => {
+    if (!aiEnabled()) return basicTurn(body);
+    return interviewTurn(body);
+  },
+
+  // ③-B 실전 면접 결과
+  'POST /api/interview/report': async (body) => {
+    if (!aiEnabled()) return basicReport(body);
+    return interviewReport(body);
+  },
+};
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, 'http://x');
+  if (url.pathname === '/api/tts' && req.method === 'GET') {
+    if (!ttsAvailable()) return send(res, 501, { error: 'tts_unavailable' });
+    try {
+      const wav = await synthesize(url.searchParams.get('text') || '');
+      return send(res, 200, wav, { 'Content-Type': 'audio/wav', 'Cache-Control': 'max-age=86400' });
+    } catch (err) {
+      return send(res, 500, { error: err.message });
+    }
+  }
+
+  const handler = routes[`${req.method} ${url.pathname}`];
+  if (!handler) {
+    if (url.pathname.startsWith('/api/')) return send(res, 404, { error: '없는 API예요.' });
+    return serveStatic(req, res);
+  }
+  try {
+    const body = req.method === 'POST' ? await readJson(req) : {};
+    send(res, 200, await handler(body));
+  } catch (err) {
+    if (err instanceof AiError) return send(res, err.code === 'auth' ? 401 : err.code === 'rate' ? 429 : 502, { error: err.message, code: err.code });
+    if (err.status) return send(res, err.status, { error: err.message });
+    console.error(err);
+    send(res, 500, { error: '서버에서 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요.' });
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`\n  기업 자료 기반 AI 영어 면접 준비`);
+  console.log(`  ▶ http://localhost:${PORT}\n`);
+  console.log(`  AI 분석·피드백: ${aiEnabled() ? `연결됨 (${MODEL})` : '연결 안 됨 — .env에 ANTHROPIC_API_KEY를 넣으면 켜져요. 지금은 샘플·기본 피드백으로 동작해요.'}`);
+  console.log(`  면접관 음성: ${ttsAvailable() ? 'Piper 음성 사용' : '브라우저 내장 음성 사용'}\n`);
+  if (ttsAvailable()) synthesize('Hello.').catch(() => {}); // 음성 모델을 미리 불러 첫 질문 지연을 줄인다
+});

@@ -1,0 +1,108 @@
+{
+  "name": "[샘플] Brightway Mobility · 프로덕트 마케팅",
+  "sample": true,
+  "role": "Junior Product Marketing Associate",
+  "experience": "",
+  "sources": [
+    {
+      "id": "S1",
+      "kind": "job",
+      "url": "",
+      "title": "[가상 샘플] Brightway Mobility 채용공고 - Junior Product Marketing Associate",
+      "status": "ok",
+      "text": "[This is a fictional sample job posting written for a demo. Brightway Mobility is not a real company.]\n\nBrightway Mobility - Junior Product Marketing Associate (Seoul, Full-time)\n\nAbout the role\nBrightway Mobility runs a shared e-scooter and e-bike app in Korean cities. We are looking for a Junior Product Marketing Associate to help us grow our rider community in Korea.\n\nWhat you will do\n- Support launch campaigns for new features and new cities.\n- Analyze rider data and survey results to find insights for marketing plans.\n- Work with our global marketing team in Singapore in English, through weekly video calls and written reports.\n- Create content for our social media channels and in-app messages.\n- Help run partnerships with universities and local communities.\n\nWhat we are looking for\n- Bachelor's degree in any field.\n- Business-level English, spoken and written.\n- Basic data analysis skills with Excel or Google Sheets. SQL is a plus.\n- Strong interest in urban mobility and sustainability.\n- Good communication and teamwork skills.\n\nInterview process\nDocument screening, an English interview with the global team, and a final interview."
+    },
+    {
+      "id": "S2",
+      "kind": "company",
+      "url": "",
+      "title": "[가상 샘플] Brightway Mobility 보도자료 - 부산 진출과 Brightway Pass 출시",
+      "status": "ok",
+      "text": "[This is a fictional sample press release written for a demo. The company and numbers are not real.]\n\nBrightway Mobility expands to Busan and launches 'Brightway Pass'\n\nBrightway Mobility announced that it started service in Busan this year, its third city in Korea after Seoul and Daejeon. The company also launched 'Brightway Pass', a monthly subscription plan that gives riders 30 free unlocks and discounted rides.\n\nThe company said safety is its top priority this year. It started a helmet-sharing program and in-app safety lessons for first-time riders.\n\nBrightway Mobility also signed partnerships with four universities in Busan to offer student discounts. The head of the Korea team said the company wants to become 'the easiest way to make short trips in the city'."
+    }
+  ],
+  "analysis": {
+    "company_name": "Brightway Mobility (가상 기업)",
+    "role_title": "Junior Product Marketing Associate",
+    "summary": {
+      "ko": "Brightway Mobility는 국내 도시에서 공유 전동킥보드·전기자전거 앱을 운영하는 (가상) 기업이며, 서울에서 일할 주니어 프로덕트 마케팅 담당자를 뽑습니다. 이 직무는 신규 기능·도시 출시 캠페인 지원, 라이더 데이터 분석, 싱가포르 글로벌 팀과의 영어 협업을 맡습니다. 회사는 올해 부산에 진출하고 월 구독 상품 'Brightway Pass'를 내놓았으며, 안전 프로그램과 대학 제휴를 강조하고 있습니다.",
+      "en": "Brightway Mobility is a (fictional) company that runs a shared e-scooter and e-bike app in Korean cities, and it is hiring a Junior Product Marketing Associate in Seoul. The role supports launch campaigns for new features and cities, analyzes rider data, and works in English with the global team in Singapore. This year the company expanded to Busan, launched the 'Brightway Pass' monthly subscription, and is focusing on safety programs and university partnerships.",
+      "sources": ["S1", "S2"]
+    },
+    "duties": [
+      { "ko": "신규 기능과 신규 도시 출시 캠페인 지원", "en": "Support launch campaigns for new features and new cities.", "sources": ["S1"] },
+      { "ko": "라이더 데이터와 설문 결과를 분석해 마케팅 계획에 쓸 인사이트 찾기", "en": "Analyze rider data and survey results to find insights for marketing plans.", "sources": ["S1"] },
+      { "ko": "싱가포르 글로벌 마케팅 팀과 주간 화상 회의·서면 보고로 영어 협업", "en": "Work with the global marketing team in Singapore in English through weekly video calls and written reports.", "sources": ["S1"] },
+      { "ko": "소셜 미디어 채널과 앱 내 메시지 콘텐츠 제작", "en": "Create content for social media channels and in-app messages.", "sources": ["S1"] },
+      { "ko": "대학·지역 커뮤니티와의 제휴 운영 지원", "en": "Help run partnerships with universities and local communities.", "sources": ["S1"] }
+    ],
+    "competencies": [
+      { "ko": "학사 학위 (전공 무관)", "en": "Bachelor's degree in any field.", "sources": ["S1"] },
+      { "ko": "말하기·쓰기 모두 비즈니스 수준의 영어", "en": "Business-level English, both spoken and written.", "sources": ["S1"] },
+      { "ko": "엑셀 또는 구글 시트 기초 데이터 분석 (SQL 가능하면 우대)", "en": "Basic data analysis with Excel or Google Sheets; SQL is a plus.", "sources": ["S1"] },
+      { "ko": "도시 이동 수단과 지속가능성에 대한 높은 관심", "en": "Strong interest in urban mobility and sustainability.", "sources": ["S1"] },
+      { "ko": "소통 능력과 팀워크", "en": "Good communication and teamwork skills.", "sources": ["S1"] }
+    ],
+    "company_insights": [
+      { "category": "business", "ko": "서울·대전에 이어 올해 부산에서 서비스를 시작해 국내 세 번째 도시로 확장", "en": "Started service in Busan this year, its third Korean city after Seoul and Daejeon.", "sources": ["S2"] },
+      { "category": "product", "ko": "무료 잠금 해제 30회와 할인 요금을 주는 월 구독 상품 'Brightway Pass' 출시", "en": "Launched 'Brightway Pass', a monthly subscription with 30 free unlocks and discounted rides.", "sources": ["S2"] },
+      { "category": "trend", "ko": "올해 최우선 과제를 안전으로 정하고 헬멧 공유 프로그램과 첫 이용자 대상 앱 내 안전 교육 시작", "en": "Made safety its top priority this year, starting a helmet-sharing program and in-app safety lessons for first-time riders.", "sources": ["S2"] },
+      { "category": "business", "ko": "부산 지역 대학 4곳과 학생 할인 제휴 체결", "en": "Signed student-discount partnerships with four universities in Busan.", "sources": ["S2"] }
+    ],
+    "connections": [
+      { "ko": "부산 진출과 대학 제휴는 공고의 '신규 도시 출시 캠페인'·'대학 제휴 운영' 업무와 직접 연결됩니다. 대학생 대상 캠페인 아이디어를 준비해 두면 좋습니다.", "en": "The Busan launch and university partnerships connect directly to the duties of supporting new-city launches and running university partnerships. Prepare an idea for a student-focused campaign.", "sources": ["S1", "S2"] },
+      { "ko": "Brightway Pass 같은 구독 상품은 데이터 분석 역량을 보여 줄 소재입니다. 어떤 지표(재구독률, 이용 횟수)를 볼지 말할 수 있으면 좋습니다.", "en": "A subscription product like Brightway Pass is a good topic to show data skills. Be ready to say which metrics you would track, such as renewal rate or rides per user.", "sources": ["S1", "S2"] },
+      { "ko": "회사의 안전 강조는 콘텐츠 제작 업무와 연결됩니다. 안전 수칙을 재미있게 알리는 콘텐츠 아이디어를 말할 수 있습니다.", "en": "The company's focus on safety links to the content creation duty. You could suggest content that makes safety rules fun to learn.", "sources": ["S1", "S2"] }
+    ],
+    "not_found": [
+      "팀 규모와 보고 체계",
+      "연봉·복지 등 근무 조건",
+      "부산 진출 이후의 이용자 수나 매출 같은 성과 수치",
+      "경쟁사와 비교한 회사의 강점"
+    ],
+    "questions": [
+      { "id": "Q1", "en": "Could you briefly introduce yourself and tell us why you are interested in this role?", "ko": "간단히 자기소개를 하고, 이 직무에 관심을 갖게 된 이유를 말씀해 주시겠어요?", "intent_ko": "기본 영어 소통 능력과 지원 동기가 직무와 맞는지 확인합니다.", "type": "motivation", "sources": ["S1"] },
+      { "id": "Q2", "en": "Why do you want to work at Brightway Mobility, and what do you know about our recent moves?", "ko": "왜 Brightway Mobility에서 일하고 싶은지, 그리고 저희 회사의 최근 움직임에 대해 무엇을 알고 있나요?", "intent_ko": "회사를 조사했는지, 부산 진출·구독 상품 등 최근 동향을 이해하는지 봅니다.", "type": "company", "sources": ["S2"] },
+      { "id": "Q3", "en": "Tell me about a time you used data to make a decision or solve a problem.", "ko": "데이터를 활용해 결정을 내리거나 문제를 해결했던 경험을 말해 주세요.", "intent_ko": "공고의 '라이더 데이터 분석' 업무와 엑셀·SQL 역량을 실제로 써 봤는지 확인합니다.", "type": "experience", "sources": ["S1"] },
+      { "id": "Q4", "en": "We just launched in Busan. How would you plan a campaign to attract university students there?", "ko": "저희가 최근 부산에 진출했습니다. 그곳 대학생을 끌어들이는 캠페인을 어떻게 기획하겠어요?", "intent_ko": "신규 도시 출시 캠페인과 대학 제휴 업무를 회사 상황에 맞게 생각할 수 있는지 봅니다.", "type": "role_fit", "sources": ["S1", "S2"] },
+      { "id": "Q5", "en": "This role works closely with our global team in Singapore. Can you tell me about a time you worked with people from a different background?", "ko": "이 직무는 싱가포르 글로벌 팀과 긴밀히 일합니다. 배경이 다른 사람들과 함께 일했던 경험을 말해 주세요.", "intent_ko": "영어 협업과 팀워크 역량을 구체적인 경험으로 확인합니다.", "type": "behavioral", "sources": ["S1"] }
+    ],
+    "expressions": [
+      { "en": "launch campaign", "ko": "출시 캠페인", "example_en": "I would love to support the launch campaign for your new city.", "example_ko": "새 도시 출시 캠페인을 꼭 지원해 보고 싶습니다.", "sources": ["S1"] },
+      { "en": "find insights from data", "ko": "데이터에서 인사이트를 찾다", "example_en": "I enjoy finding insights from rider data and turning them into clear plans.", "example_ko": "라이더 데이터에서 인사이트를 찾아 명확한 계획으로 바꾸는 일을 좋아합니다.", "sources": ["S1"] },
+      { "en": "business-level English", "ko": "비즈니스 수준의 영어", "example_en": "I have been building my business-level English through weekly presentations.", "example_ko": "매주 발표를 하며 비즈니스 수준의 영어를 키워 왔습니다.", "sources": ["S1"] },
+      { "en": "urban mobility", "ko": "도시 이동 수단", "example_en": "I'm interested in how urban mobility can make short trips easier.", "example_ko": "도시 이동 수단이 짧은 이동을 어떻게 더 쉽게 만드는지에 관심이 있습니다.", "sources": ["S1", "S2"] },
+      { "en": "sustainability", "ko": "지속가능성", "example_en": "Sustainability is one of the main reasons I want to work in this industry.", "example_ko": "지속가능성은 제가 이 업계에서 일하고 싶은 주된 이유 중 하나입니다.", "sources": ["S1"] },
+      { "en": "expand to a new city", "ko": "새 도시로 확장하다", "example_en": "Since you expanded to Busan this year, local partnerships seem very important.", "example_ko": "올해 부산으로 확장하셨으니 지역 제휴가 매우 중요해 보입니다.", "sources": ["S2"] },
+      { "en": "subscription plan", "ko": "구독 상품", "example_en": "For a subscription plan like Brightway Pass, I would track the renewal rate.", "example_ko": "Brightway Pass 같은 구독 상품이라면 재구독률을 살펴보겠습니다.", "sources": ["S2"] },
+      { "en": "top priority", "ko": "최우선 과제", "example_en": "I noticed that safety is your top priority this year.", "example_ko": "올해 안전이 최우선 과제라는 점이 눈에 띄었습니다.", "sources": ["S2"] },
+      { "en": "work closely with", "ko": "~와 긴밀히 협력하다", "example_en": "I'm comfortable working closely with a global team in English.", "example_ko": "영어로 글로벌 팀과 긴밀히 협력하는 데 익숙합니다.", "sources": ["S1"] },
+      { "en": "target audience", "ko": "목표 고객층", "example_en": "University students would be a key target audience in Busan.", "example_ko": "부산에서는 대학생이 핵심 목표 고객층이 될 것입니다.", "sources": ["S2"] }
+    ],
+    "warnings": [
+      "이 프로젝트는 데모용 가상 기업 자료입니다. 실제 지원 준비에는 실제 공고와 기사를 넣어 주세요."
+    ]
+  },
+  "sample_answers": {
+    "Q1": {
+      "en": "Hello, my name is [your name], and I majored in [your major]. I'm interested in this role because I enjoy both marketing and working with data. In [your project or club], I [what you did], and I learned how small insights can change a campaign. I also care about urban mobility and sustainability, so helping more people make short trips easily is exciting to me.",
+      "ko": "안녕하세요, 저는 [이름]이고 [전공]을 전공했습니다. 마케팅과 데이터 작업을 모두 좋아해서 이 직무에 관심을 갖게 됐습니다. [프로젝트/동아리]에서 [한 일]을 하며 작은 인사이트가 캠페인을 바꿀 수 있다는 것을 배웠습니다. 도시 이동 수단과 지속가능성에도 관심이 많아, 더 많은 사람이 짧은 거리를 쉽게 이동하도록 돕는 일이 기대됩니다."
+    },
+    "Q2": {
+      "en": "I want to work at Brightway Mobility because you are growing fast and care about safety. I read that you started service in Busan this year and launched Brightway Pass, a monthly subscription with 30 free unlocks. I also noticed your helmet-sharing program. I'd like to help new riders, especially students, trust and enjoy the service.",
+      "ko": "Brightway Mobility가 빠르게 성장하면서도 안전을 중시하기 때문에 일하고 싶습니다. 올해 부산에서 서비스를 시작하고, 무료 잠금 해제 30회가 포함된 월 구독 상품 Brightway Pass를 내놓았다고 읽었습니다. 헬멧 공유 프로그램도 눈에 띄었습니다. 새 이용자, 특히 학생들이 서비스를 믿고 즐겁게 쓰도록 돕고 싶습니다."
+    },
+    "Q3": {
+      "en": "In [your class or project], we had a problem with [the problem]. I collected [what data] in Google Sheets and found that [your finding]. Based on that, we [the decision], and as a result, [the outcome, with a number if possible]. In this role, I would use the same approach to find insights from rider data and surveys.",
+      "ko": "[수업/프로젝트]에서 [문제]가 있었습니다. 저는 구글 시트에 [어떤 데이터]를 모아 [발견한 점]을 찾았습니다. 그에 따라 [결정]을 했고, 그 결과 [가능하면 숫자로 된 성과]가 있었습니다. 이 직무에서도 같은 방식으로 라이더 데이터와 설문에서 인사이트를 찾겠습니다."
+    },
+    "Q4": {
+      "en": "First, I would use your new partnerships with four universities in Busan. I would run a campus event with free helmet use and a short safety lesson, and offer a student version of Brightway Pass. Then I would track sign-ups and second rides by university to see which message works best, and share the results with the global team.",
+      "ko": "먼저 부산 대학 4곳과의 새 제휴를 활용하겠습니다. 헬멧 무료 이용과 짧은 안전 교육이 있는 캠퍼스 행사를 열고, 학생용 Brightway Pass를 제안하겠습니다. 그다음 대학별 가입 수와 두 번째 이용률을 보고 어떤 메시지가 가장 효과적인지 확인해 글로벌 팀과 결과를 공유하겠습니다."
+    },
+    "Q5": {
+      "en": "In [your experience, such as a team project with exchange students], I worked with people from [countries or backgrounds]. At first, we [a challenge, such as different ways of sharing ideas]. I suggested [your action, such as a shared document and short weekly check-ins]. As a result, [the outcome]. I learned to write clearly and confirm decisions in writing, which will help me work with your team in Singapore.",
+      "ko": "[교환학생과의 팀 프로젝트 같은 경험]에서 [국가/배경]의 사람들과 함께 일했습니다. 처음에는 [아이디어를 나누는 방식이 다른 것 같은 어려움]이 있었습니다. 저는 [공유 문서와 짧은 주간 점검 같은 행동]을 제안했고, 그 결과 [성과]가 있었습니다. 명확하게 글로 쓰고 결정을 글로 확인하는 법을 배웠고, 이것이 싱가포르 팀과 일할 때 도움이 될 것입니다."
+    }
+  }
+}

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>인터뷰 브리프</title>
+  <meta name="description" content="지원 기업의 공고와 자료로 준비하는 AI 영어 면접 연습">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#home"><span class="brand-mark" aria-hidden="true">IB</span>인터뷰 브리프</a>
+      <nav class="topnav" aria-label="주요 메뉴">
+        <a href="#home" data-tab="home">자료 입력</a>
+        <a href="#review" data-tab="review">나의 복습</a>
+      </nav>
+      <span id="ai-status" class="badge">확인 중</span>
+    </div>
+    <nav id="crumb" class="crumb" aria-label="준비 단계" hidden></nav>
+  </header>
+
+  <main id="view" class="view"><p class="muted center pad">불러오는 중…</p></main>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
