@@ -39,7 +39,7 @@ test('화면 파일 제공', async () => {
   for (const f of ['/js/app.js', '/css/style.css', '/favicon.svg']) assert.equal((await fetch(BASE + f)).status, 200, f);
 });
 
-test('깜자 쇼릴: 모듈·미리보기·영상 제공, 15초 안에 비트가 순서대로', async () => {
+test('깜자 쇼릴: 모듈·미리보기·영상 제공, 12초 안에 비트가 순서대로', async () => {
   assert.equal(spawnSync(process.execPath, ['--check', 'public/motion/kkamja-showreel.js'], { cwd: ROOT }).status, 0);
   const js = await fetch(BASE + '/motion/kkamja-showreel.js');
   assert.match(js.headers.get('content-type'), /javascript/);
@@ -47,7 +47,8 @@ test('깜자 쇼릴: 모듈·미리보기·영상 제공, 15초 안에 비트가
   const mp4 = await fetch(BASE + '/motion/kkamja-showreel.mp4');
   assert.equal(mp4.headers.get('content-type'), 'video/mp4');
   const { DURATION, BEATS, SAY_AT } = await import('../public/motion/kkamja-showreel.js');
-  assert.equal(DURATION, 15);
+  assert.equal(DURATION, 12);
+  assert.equal(BEATS[0].t, 0);
   assert.ok(SAY_AT > 0 && SAY_AT < DURATION);
   BEATS.forEach((b, i) => assert.ok(b.t >= (BEATS[i - 1]?.t ?? 0) && b.t < DURATION, b.name));
 });

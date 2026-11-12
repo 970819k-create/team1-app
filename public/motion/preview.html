@@ -42,14 +42,14 @@
 <body>
 <main>
   <div class="ui">
-    <h1>깜자 쇼릴 · 15초</h1>
+    <h1>깜자 쇼릴 · 12초</h1>
     <p class="sub">모션이 어떻게 진행되는지 아래 타임라인으로 바로 확인하세요. 파일을 고치면 이 화면이 같은 시간에서 다시 열립니다.</p>
   </div>
   <div class="player" id="player"></div>
   <div class="ui">
     <div class="timeline">
       <div class="ticks" id="ticks"></div>
-      <input type="range" id="scrub" min="0" max="15" step="0.0333333" value="0" aria-label="재생 위치">
+      <input type="range" id="scrub" min="0" max="12" step="0.0333333" value="0" aria-label="재생 위치">
     </div>
     <div class="bar">
       <button class="primary" id="play">▶ 재생</button>
@@ -72,7 +72,7 @@
 </main>
 <script type="module">
   const MOD = './kkamja-showreel.js';
-  const { createKkamjaShowreel, BEATS, DURATION, FPS } = await import(MOD + '?v=' + Date.now());
+  const { createKkamjaShowreel, BEATS, DURATION, FPS, START } = await import(MOD + '?v=' + Date.now());
   const q = new URLSearchParams(location.search);
   const bare = q.has('bare');
   if (bare) document.body.classList.add('bare');
@@ -90,6 +90,7 @@
   window.__reel = reel;
   window.__seek = t => reel.seek(t);
   window.__duration = DURATION;
+  window.__start = START;
   window.__ready = reel.ready;
   if (bare) { await reel.ready; reel.seek(Number(q.get('t')) || 0); }
   else {

@@ -44,11 +44,13 @@ function serve() {
 }
 
 // ───────── 효과음: 한 가지 재료(부드러운 나무·공기·저음)를 한 방의 잔향 안에서 ─────────
-function synthSfx(file, duration) {
+function synthSfx(file, duration, OFF = 0) { // OFF: 영상이 원래 타임라인의 몇 초부터 시작하는지
   const SR = 48000, N = Math.ceil(duration * SR);
   const L = new Float32Array(N), Rr = new Float32Array(N);
   let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
   const add = (t0, fn, len, gain = 1, pan = 0) => {
+    t0 -= OFF;
+    if (t0 < 0) return; // 잘려 나간 앞부분의 소리
     const s0 = Math.floor(t0 * SR), n = Math.floor(len * SR);
     const gl = gain * Math.cos((pan + 1) * Math.PI / 4), gr = gain * Math.sin((pan + 1) * Math.PI / 4);
     for (let i = 0; i < n && s0 + i < N; i++) { const v = fn(i / SR); L[s0 + i] += v * gl; Rr[s0 + i] += v * gr; }
@@ -69,7 +71,7 @@ function synthSfx(file, duration) {
     add(7.1, t => { const u = t / len, f = 300 + 2600 * Math.pow(u, 1.6), q = 0.12, w = 2 * Math.PI * f / SR;
       const x = rnd(); y1 += w * (x - y1 - q * y2); y2 += w * y1; // 간단한 2극 필터
       return y2 * 2.2 * Math.sin(Math.PI * Math.min(1, u * 1.15)) ** 2; }, len, 0.55, 0); }
-  for (let i = 0; i < Math.floor(0.95 * SR); i++) { const s = Math.floor(7.1 * SR) + i, u = i / (0.95 * SR), p = 0.9 - 1.6 * u; // 패닝
+  for (let i = 0; i < Math.floor(0.95 * SR); i++) { const s = Math.floor((7.1 - OFF) * SR) + i, u = i / (0.95 * SR), p = 0.9 - 1.6 * u; // 패닝
     const v = (L[s] + Rr[s]) / 2; L[s] = v * Math.cos((p + 1) * Math.PI / 4) * 1.4; Rr[s] = v * Math.sin((p + 1) * Math.PI / 4) * 1.4; }
   // 글자가 맞는 소리
   [7.62, 7.68, 7.74, 7.8].forEach((t, i) => add(t, knock(420 - i * 30, 24), 0.25, 0.18, 0.5 - i * 0.25));
@@ -106,7 +108,7 @@ const browser = await chromium.launch();
 const probe = await browser.newPage();
 await probe.goto(url);
 await probe.waitForFunction(() => window.__ready);
-const DURATION = await probe.evaluate(() => window.__duration);
+const [DURATION, START] = await probe.evaluate(() => [window.__duration, window.__start || 0]);
 await probe.close();
 const frames = Math.round(DURATION * FPS);
 const total = frames * SHUTTER;
@@ -133,7 +135,7 @@ srv.close();
 
 const vf = SHUTTER > 1 ? `tmix=frames=${SHUTTER},select='eq(mod(n\\,${SHUTTER})\\,${SHUTTER - 1})',setpts=N/${FPS}/TB,format=yuv420p` : 'format=yuv420p';
 const ff = ['-y', '-loglevel', 'error', '-framerate', String(FPS * SHUTTER), '-i', path.join(tmp, '%06d.jpg')];
-if (!flag('no-sound')) { const wav = path.join(tmp, 'sfx.wav'); synthSfx(wav, DURATION); ff.push('-i', wav, '-c:a', 'aac', '-b:a', '192k', '-shortest'); }
+if (!flag('no-sound')) { const wav = path.join(tmp, 'sfx.wav'); synthSfx(wav, DURATION, START); ff.push('-i', wav, '-c:a', 'aac', '-b:a', '192k', '-shortest'); }
 ff.push('-vf', vf, '-r', String(FPS), '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-movflags', '+faststart', OUT);
 const r = spawnSync('ffmpeg', ff, { stdio: 'inherit' });
 fs.rmSync(tmp, { recursive: true, force: true });

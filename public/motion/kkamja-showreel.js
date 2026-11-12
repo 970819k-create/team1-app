@@ -1,4 +1,4 @@
-// 깜자 쇼릴 — 15초 모션 그래픽 (의존성 없는 ES 모듈)
+// 깜자 쇼릴 — 12초 모션 그래픽 (의존성 없는 ES 모듈)
 //
 // 모든 장면은 시간 t(초)에 대한 순수 함수다. seek(t)를 두 번 불러도 같은 그림이 나오므로
 // 웹앱에서 실시간으로 재생해도, 프레임 단위로 MP4를 뽑아도 결과가 같다.
@@ -11,17 +11,22 @@
 //
 // 자세한 설명: public/motion/README.md
 
-export const DURATION = 15;
+// 원래 15초 타임라인(SRC)에서 START초부터 잘라 쓴다. 앞부분(점, MOTION DESIGN, 하드컷)은 쓰지 않는다.
+// 장면 함수들은 모두 원래 시간(SRC)으로 적혀 있고, 바깥에 보이는 시간은 0초부터 시작한다.
+export const START = 3;
+const SRC_END = 15;
+export const DURATION = SRC_END - START; // 12초
 export const FPS = 30;
-export const SAY_AT = 8.75; // 깜자가 "easy 면접"이라고 말하는 순간
+const SRC_SAY = 8.75;
+export const SAY_AT = SRC_SAY - START; // 깜자가 "easy 면접"이라고 말하는 순간 (5.75초)
 
-// 미리보기 타임라인에 표시되는 비트 (시작 시간, 이름)
-export const BEATS = [
+// 미리보기 타임라인에 표시되는 비트 (시작 시간, 이름) — 바깥 시간
+const SRC_BEATS = [
   { t: 0.0, name: '정적 · 점 하나' },
   { t: 0.6, name: '점 → MOTION의 O' },
   { t: 1.25, name: 'DESIGN 마스크 업' },
   { t: 2.4, name: '하드컷 4번' },
-  { t: 2.95, name: '아이리스 → 공' },
+  { t: 3.0, name: 'TIMING 판 → 공 (아이리스)' },
   { t: 3.35, name: '바운스 (스쿼시 & 스트레치)' },
   { t: 5.15, name: '공 → 타임라인 트랙' },
   { t: 5.6, name: 'EASY 글자 드롭' },
@@ -32,6 +37,7 @@ export const BEATS = [
   { t: 12.6, name: '로고로 모이기' },
   { t: 13.6, name: '엔드 카드' },
 ];
+export const BEATS = SRC_BEATS.filter(b => b.t >= START).map(b => ({ t: +(b.t - START).toFixed(3), name: b.name }));
 
 // ───────────────────────────── 움직임 함수 ─────────────────────────────
 const W = 1920, H = 1080, GROUND = 840;
@@ -196,9 +202,8 @@ function template(base) {
 </div>`;
 }
 
-const HUD_LABELS = [
-  [0, '01 / DOT'], [0.6, '02 / KINETIC TYPE'], [2.4, '03 / CUTS'], [2.95, '04 / PHYSICS'],
-  [5.15, '05 / TITLE'], [7.1, '06 / ENTRANCE'], [8.7, '07 / DIALOGUE'], [12.6, '08 / LOCKUP'],
+const HUD_LABELS = [ // 원래 시간 기준
+  [0, '01 / PHYSICS'], [5.15, '02 / TITLE'], [7.1, '03 / ENTRANCE'], [8.7, '04 / DIALOGUE'], [12.6, '05 / LOCKUP'],
 ];
 
 let cssInjected = false;
@@ -230,7 +235,7 @@ export function createKkamjaShowreel(container, opts = {}) {
   const root = doc.createElement('div');
   root.className = 'ksr';
   root.setAttribute('role', 'img');
-  root.setAttribute('aria-label', '깜자가 날아와 "easy 면접"이라고 말하는 15초 모션 그래픽');
+  root.setAttribute('aria-label', '깜자가 날아와 "easy 면접"이라고 말하는 12초 모션 그래픽');
   root.innerHTML = template(o.assetBase);
   container.appendChild(root);
   const R = {};
@@ -273,7 +278,7 @@ export function createKkamjaShowreel(container, opts = {}) {
     const s = lerp(0.42, 1, ease.expoOut(u));
     const im = impact(t, FLY.land, 0.22, 7, 20);
     let sx = im.sx, sy = im.sy;
-    if (t > SAY_AT && t < 9.6) { const k = 0.018 * Math.sin(2 * Math.PI * 7 * (t - SAY_AT)) * (1 - seg(t, 9.2, 9.6)); sy *= 1 + k; sx *= 1 - k * 0.5; } // 말하는 들썩임
+    if (t > SRC_SAY && t < 9.6) { const k = 0.018 * Math.sin(2 * Math.PI * 7 * (t - SRC_SAY)) * (1 - seg(t, 9.2, 9.6)); sy *= 1 + k; sx *= 1 - k * 0.5; } // 말하는 들썩임
     if (t >= 9.6) { const k = 0.006 * Math.sin(2 * Math.PI * 0.55 * (t - 9.6)); sy *= 1 + k; } // 숨쉬기
     return { x: f.x, y: f.y, s, r: spin, sx, sy };
   }
@@ -282,8 +287,10 @@ export function createKkamjaShowreel(container, opts = {}) {
     tf(el, p.x - KK.w / 2, p.y - KK.footY, p.s, p.r, p.sx, p.sy);
   }
 
-  function render(t) {
-    t = clamp(t, 0, DURATION);
+  // 바깥 시간 → 원래 시간
+  function render(t) { renderSrc(clamp(t, 0, DURATION) + START); }
+  function renderSrc(t) {
+    t = clamp(t, 0, SRC_END);
     // ── 카메라 ──
     let camX = 0, camY = 0, camS = 1;
     camS *= lerp(1, 1.05, tw(t, 0.6, 2.4, ease.sineInOut));
@@ -495,7 +502,7 @@ export function createKkamjaShowreel(container, opts = {}) {
 
     // ── HUD ──
     if (o.hud) {
-      const fr = Math.floor(t * FPS + 1e-6);
+      const fr = Math.floor((t - START) * FPS + 1e-6);
       const ss = String(Math.floor(fr / FPS)).padStart(2, '0'), ff = String(fr % FPS).padStart(2, '0');
       R.tc.textContent = `00:${ss}:${ff}`;
       let lab = HUD_LABELS[0][1];
@@ -566,7 +573,7 @@ export function createKkamjaShowreel(container, opts = {}) {
   api.ready = Promise.all([fontsReady, ...imgs]).then(() => {
     measure();
     const reduce = o.respectReducedMotion && typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) api.seek(11); // 움직임을 줄인 사용자: 깜자가 말하는 장면 한 장만
+    if (reduce) api.seek(11 - START); // 움직임을 줄인 사용자: 깜자가 말하는 장면 한 장만
     else { api.seek(time); if (o.autoplay) api.play(); }
     return api;
   });
