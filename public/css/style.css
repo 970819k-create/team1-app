@@ -858,3 +858,26 @@ body.in-room .view { padding-top:18px; }
   .topbar { padding-top: env(safe-area-inset-top); }
   .view { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
 }
+
+/* =====================================================================
+   대문: 깜자 쇼릴 (홈 맨 위)
+   ===================================================================== */
+.home-reel { position: relative; max-width: 760px; margin: 0 auto 26px; border-radius: 22px; overflow: hidden;
+  box-shadow: 0 2px 0 #ece4cf, 0 16px 40px rgba(60, 45, 15, .12); background: #f7f1e3; }
+.home-reel-stage { width: 100%; aspect-ratio: 16 / 9; max-width: 100%; }
+.home-reel-stage > .ksr { width: 100%; }
+.home-reel-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; z-index: 2; }
+.reel-btn { border: 0; border-radius: 999px; padding: 6px 12px; min-height: 32px; font-size: 12.5px; font-weight: 700;
+  color: #fff; background: rgba(20, 24, 32, .55); backdrop-filter: blur(6px); }
+.reel-btn:hover { background: rgba(20, 24, 32, .75); }
+.reel-btn[aria-pressed="true"] { background: #3f6a2c; }
+@media (max-width: 560px) {
+  .home-reel { border-radius: 16px; margin-bottom: 18px; }
+  .home-reel-controls { right: 8px; bottom: 8px; }
+  .reel-btn { padding: 4px 10px; min-height: 28px; font-size: 11.5px; }
+}
+
+/* 대문 문구: 낱말 중간에서 줄이 바뀌지 않게, 좁은 화면에서는 '말고,' 뒤에서 줄바꿈 */
+.desk-greeting h1 { word-break: keep-all; text-wrap: balance; }
+.br-sm { display: none; }
+@media (max-width: 560px) { .br-sm { display: inline; } }

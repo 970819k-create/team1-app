@@ -36,7 +36,23 @@ test('모든 자바스크립트 파일 문법', () => {
 test('화면 파일 제공', async () => {
   const html = await (await fetch(BASE + '/')).text();
   assert.match(html, /쉬었음 깜자/);
-  for (const f of ['/js/app.js', '/css/style.css', '/favicon.svg']) assert.equal((await fetch(BASE + f)).status, 200, f);
+  for (const f of ['/js/app.js', '/css/style.css', '/icons/icon-192.png', '/manifest.webmanifest']) assert.equal((await fetch(BASE + f)).status, 200, f);
+});
+
+test('깜자 쇼릴(대문): 모듈·미리보기·영상 제공, 12초 안에 비트가 순서대로, 이미지 파일 존재', async () => {
+  assert.equal(spawnSync(process.execPath, ['--check', 'public/motion/kkamja-showreel.js'], { cwd: ROOT }).status, 0);
+  const js = await fetch(BASE + '/motion/kkamja-showreel.js');
+  assert.match(js.headers.get('content-type'), /javascript/);
+  assert.equal((await fetch(BASE + '/motion/preview.html')).status, 200);
+  const mp4 = await fetch(BASE + '/motion/kkamja-showreel.mp4');
+  assert.equal(mp4.headers.get('content-type'), 'video/mp4');
+  const { DURATION, BEATS, SAY_AT } = await import('../public/motion/kkamja-showreel.js');
+  assert.equal(DURATION, 12);
+  assert.equal(BEATS[0].t, 0);
+  assert.ok(SAY_AT > 0 && SAY_AT < DURATION);
+  BEATS.forEach((b, i) => assert.ok(b.t >= (BEATS[i - 1]?.t ?? 0) && b.t < DURATION, b.name));
+  const src = fs.readFileSync(path.join(ROOT, 'public/motion/kkamja-showreel.js'), 'utf8');
+  for (const img of new Set(src.match(/kkamja-[a-z-]+\.(png|webp)/g))) assert.ok(fs.existsSync(path.join(ROOT, 'public/images', img)), img);
 });
 
 test('폴더 밖 파일은 열 수 없음', async () => {

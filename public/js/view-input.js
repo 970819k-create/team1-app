@@ -2,6 +2,59 @@
 import * as store from './store.js';
 import { $, $$, esc, api, toast, confirmBox, fmtDate } from './ui.js';
 import { installCardHTML } from './install.js';
+import { speak, stopSpeaking, COACH_VOICE } from './speech.js';
+
+/* ---------- 대문 쇼릴 (팀원 작업: public/motion/kkamja-showreel.js) ---------- */
+let reel = null;
+let reelObserver = null;
+let reelSound = false;
+
+async function mountHomeReel() {
+  leaveHome();
+  const el = document.getElementById('home-reel');
+  if (!el) return;
+  try {
+    const { createKkamjaShowreel } = await import('/motion/kkamja-showreel.js');
+    if (!el.isConnected) return; // 그사이 다른 화면으로 이동함
+    reel = createKkamjaShowreel(el, {
+      autoplay: true, loop: true, hud: false, assetBase: '/images/',
+      // 깜자가 말하는 순간: 소리를 켠 경우에만 깜자 목소리로 읽는다
+      onSay: () => { if (reelSound) speak('easy 면접!', { role: 'coach', lang: 'ko', voice: COACH_VOICE, gender: 'f' }).catch(() => {}); },
+    });
+    // 화면에서 안 보이면 멈춰서 배터리를 아낀다
+    if ('IntersectionObserver' in window) {
+      reelObserver = new IntersectionObserver(([entry]) => {
+        if (!reel) return;
+        if (entry.isIntersecting && !reel.userPaused) reel.play(); else reel.pause();
+      }, { threshold: 0.2 });
+      reelObserver.observe(el);
+    }
+  } catch (_) {
+    el.closest('.home-reel')?.remove(); // 영상을 못 불러와도 홈은 그대로 쓴다
+  }
+}
+
+/** 홈을 떠날 때 쇼릴 정리 */
+export function leaveHome() {
+  reelObserver?.disconnect();
+  reelObserver = null;
+  if (reel) { reel.destroy(); reel = null; }
+}
+
+function reelAction(btn) {
+  if (!reel) return;
+  if (btn.dataset.action === 'reel-toggle') {
+    reel.userPaused = reel.playing;
+    reel.toggle();
+    btn.textContent = reel.playing ? '❚❚' : '▶';
+    btn.setAttribute('aria-label', reel.playing ? '영상 일시정지' : '영상 재생');
+  } else if (btn.dataset.action === 'reel-sound') {
+    reelSound = !reelSound;
+    btn.setAttribute('aria-pressed', String(reelSound));
+    btn.textContent = reelSound ? '🔊 깜자 목소리 켜짐' : '🔈 깜자 목소리';
+    if (reelSound) { reel.userPaused = false; reel.seek(0); reel.play(); } else stopSpeaking();
+  }
+}
 
 let companyRows = 1;
 
@@ -28,7 +81,14 @@ export function renderInput(view, status) {
   view.innerHTML = `
     <div class="desk-layout">
       <section class="desk-main" aria-label="면접 준비 홈">
-        <div class="desk-greeting"><span class="desk-date">${new Intl.DateTimeFormat('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' }).format(new Date())}</span><h1>오늘도, 천천히 준비해요.</h1><p>깜자와 함께 나만의 면접을 준비해 보세요.</p></div>
+        <section class="home-reel" aria-label="깜자 소개 영상">
+          <div class="home-reel-stage" id="home-reel"></div>
+          <div class="home-reel-controls">
+            <button type="button" class="reel-btn" data-action="reel-toggle" aria-label="영상 일시정지">❚❚</button>
+            <button type="button" class="reel-btn" data-action="reel-sound" aria-pressed="false">🔈 깜자 목소리</button>
+          </div>
+        </section>
+        <div class="desk-greeting"><span class="desk-date">${new Intl.DateTimeFormat('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' }).format(new Date())}</span><h1>영어 면접 전날 밤 말고,<br class="br-sm"> 깜자랑 오늘부터!</h1><p>깜자와 함께 나만의 면접을 준비해 보세요.</p></div>
         <section class="quick-actions" aria-label="빠른 시작">
           <button class="quick-action" data-action="start-input"><span class="quick-icon primary-icon" aria-hidden="true"><img src="/images/kkamja-consultant.webp" alt=""></span><b>새 면접 준비</b><small>채용공고로 시작하기</small></button>
           <button class="quick-action" data-action="sample"><span class="quick-icon sample-icon" aria-hidden="true"><img src="/images/kkamja-practice.webp" alt=""></span><b>샘플로 체험</b><small>예시로 먼저 둘러보기</small></button>
@@ -84,6 +144,7 @@ export function renderInput(view, status) {
       </section>
       <aside class="desk-side"><div class="desk-side-head"><b>깜자의 준비 노트</b><span>나의 면접 파트너</span></div><div class="desk-coach"><div class="desk-coach-avatar"><img src="/images/kkamja-consultant.webp" alt="면접 준비를 도와주는 깜자"></div><h2>준비는 차근차근</h2><p>기업을 이해하고 내 경험을 연결해 보세요. 깜자가 곁에서 함께할게요.</p></div><div class="desk-tip"><span>깜자의 한마디</span><p>좋은 답변은 외우는 것보다<br>나의 이야기를 담는 것부터 시작해요.</p></div>${installCardHTML()}<a href="#settings" class="desk-ai-status">${status.ai ? `${esc(status.providerLabel)} 연결됨` : status.problem === 'ollama_offline' ? 'Ollama가 꺼져 있어요' : 'AI 연결 설정하기'} <span>→</span></a></aside>
     </div>`;
+  mountHomeReel();
 }
 
 function readSource(form, name) {
@@ -134,6 +195,7 @@ export function bindInput(view, { go }) {
     const form = $('#input-form', view);
     if (!btn || (!form && btn.dataset.action !== 'sample')) return;
     switch (btn.dataset.action) {
+      case 'reel-toggle': case 'reel-sound': reelAction(btn); break;
       case 'start-input': $('#input-drawer', view).open = true; form.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('#job-url', form).focus({ preventScroll: true }); break;
       case 'mode': setMode(form, btn.dataset.target, btn.dataset.mode); break;
       case 'add-company': {

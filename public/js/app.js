@@ -3,7 +3,7 @@
 import * as store from './store.js';
 import { configure } from './speech.js';
 import { $, $$, api, handleCommon, toast } from './ui.js';
-import { renderInput, bindInput } from './view-input.js';
+import { renderInput, bindInput, leaveHome } from './view-input.js';
 import { renderAnalysis, onAnalysisAction } from './view-analysis.js';
 import { renderPractice, onPracticeAction, leavePractice, onPracticeChange } from './view-practice.js';
 import { renderInterview, bindInterviewSetup, onInterviewAction, leaveInterview, renderResult, onResultAction, setNavigator, interviewActive, stopCoach } from './view-interview.js';
@@ -39,6 +39,7 @@ function route() {
   if (current.name === 'practice' && r.name !== 'practice') leavePractice();
   if (current.name === 'interview' && r.name !== 'interview' && interviewActive()) leaveInterview();
   if (current.name === 'result') stopCoach();
+  leaveHome();
   current = r;
 
   // 상단 메뉴 표시

@@ -2,10 +2,10 @@
 // - 화면 파일(HTML·JS·CSS): 인터넷이 되면 항상 새 버전, 안 되면 저장해 둔 것 (업데이트가 바로 반영되게)
 // - 이미지·아이콘: 저장해 둔 것을 먼저 (빠르게)
 // - /api/*: 저장하지 않음 (AI 결과·키가 섞이지 않게)
-const VERSION = 'kkamja-v1';
+const VERSION = 'kkamja-v2';
 const SHELL = ['/', '/index.html', '/css/style.css', '/manifest.webmanifest', '/icons/icon-192.png',
   '/js/app.js', '/js/store.js', '/js/ui.js', '/js/speech.js', '/js/bank.js', '/js/view-input.js', '/js/view-analysis.js',
-  '/js/view-practice.js', '/js/view-interview.js', '/js/view-review.js', '/js/view-settings.js', '/js/install.js'];
+  '/js/view-practice.js', '/js/view-interview.js', '/js/view-review.js', '/js/view-settings.js', '/js/install.js', '/motion/kkamja-showreel.js'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
