@@ -1,19 +1,37 @@
 // 음성: 면접관 말하기(TTS)와 답변 듣기(음성 인식, STT)
-// - TTS: 서버에 Piper가 있으면 음성 파일, 없으면 브라우저 내장 음성(speechSynthesis)
+// - TTS: [설정]의 '면접관 목소리'에 따라
+//     · openai  : OpenAI 음성 (서버가 대신 요청, 키는 브라우저 설정의 OpenAI 키)
+//     · piper   : 서버에 설치된 Piper 음성
+//     · browser : 브라우저 내장 음성 (speechSynthesis)
+//   설정이 없으면 Piper가 있으면 Piper, 없으면 브라우저 음성. OpenAI·Piper가 실패하면 이유를 한 번 알리고 브라우저 음성으로 읽는다.
 // - STT: 브라우저 음성 인식(Web Speech API). Chrome·Edge·Safari에서 동작. 없으면 키보드 입력으로 대신한다.
 // - 음성 원본은 저장하지 않는다. 인식된 텍스트만 쓴다.
+import * as store from './store.js';
+import { apiAudio, toast } from './ui.js';
 
 let serverTts = false;
 const audio = new Audio();
 audio.preload = 'auto';
 let speakToken = 0;
+const clips = new Map(); // 같은 문장은 다시 요청하지 않는다 (요금·대기 시간 절약)
+let lastWarned = '';
 
 export function configure({ tts }) {
   serverTts = !!tts;
 }
 
+/** 지금 쓰는 면접관 목소리 */
+export function ttsEngine() {
+  const t = store.aiConfig().tts || {};
+  if (t.engine === 'openai') return 'openai';
+  if (t.engine === 'browser') return 'browser';
+  if (t.engine === 'piper') return serverTts ? 'piper' : 'browser';
+  return serverTts ? 'piper' : 'browser';
+}
+
 export function ttsMode() {
-  if (serverTts) return 'server';
+  const e = ttsEngine();
+  if (e !== 'browser') return 'server';
   return 'speechSynthesis' in window ? 'browser' : 'none';
 }
 
@@ -24,25 +42,67 @@ function pickVoice() {
     || voices.find((v) => /^en/i.test(v.lang));
 }
 
-/** 영어 문장을 읽는다. 다 읽으면 resolve. 실패하면 reject(Error). */
-export function speak(text, { rate = 1 } = {}) {
+async function clipUrl(text, engine, opts = {}) {
+  const t = store.aiConfig().tts || {};
+  const voice = opts.voice || t.voice || '';
+  const model = opts.model || t.model || '';
+  const key = `${engine}|${voice}|${model}|${text}`;
+  if (clips.has(key)) return clips.get(key);
+  const blob = await apiAudio('/api/tts', { text, engine, voice, model });
+  const url = URL.createObjectURL(blob);
+  clips.set(key, url);
+  if (clips.size > 60) {
+    const [oldKey, oldUrl] = clips.entries().next().value;
+    URL.revokeObjectURL(oldUrl);
+    clips.delete(oldKey);
+  }
+  return url;
+}
+
+function playUrl(url, rate, token) {
+  return new Promise((resolve, reject) => {
+    audio.src = url;
+    audio.playbackRate = rate;
+    audio.onended = () => token === speakToken && resolve();
+    audio.onerror = () => token === speakToken && reject(new Error('음성 파일을 재생하지 못했어요.'));
+    audio.play().catch((err) => {
+      if (token !== speakToken) return;
+      reject(Object.assign(new Error('소리를 재생하지 못했어요. 화면을 한 번 누른 뒤 [질문 다시 듣기]를 눌러 주세요.'), { code: err.name }));
+    });
+  });
+}
+
+/**
+ * 영어 문장을 읽는다. 다 읽으면 resolve. 실패하면 reject(Error).
+ * opts.engine/voice/model로 이번 한 번만 다른 목소리를 쓸 수 있다 (설정의 '미리 듣기').
+ */
+export async function speak(text, { rate = 1, engine: forced, voice, model, strict = false } = {}) {
   stopSpeaking();
   const token = ++speakToken;
-  if (!text) return Promise.resolve();
+  if (!text) return;
+  const engine = forced || ttsEngine();
+  if (engine === 'browser') return fallbackSpeak(text, rate, token);
 
-  if (serverTts) {
-    return new Promise((resolve, reject) => {
-      audio.src = `/api/tts?text=${encodeURIComponent(text)}`;
-      audio.playbackRate = rate;
-      audio.onended = () => token === speakToken && resolve();
-      audio.onerror = () => token === speakToken && fallbackSpeak(text, rate, token).then(resolve, reject);
-      audio.play().catch((err) => {
-        if (token !== speakToken) return;
-        reject(Object.assign(new Error('소리를 재생하지 못했어요. 화면을 한 번 누른 뒤 [질문 다시 듣기]를 눌러 주세요.'), { code: err.name }));
-      });
-    });
+  let url;
+  try {
+    url = await clipUrl(text, engine, { voice, model });
+  } catch (err) {
+    if (token !== speakToken) return;
+    if (strict) throw err;
+    // 면접이 멈추지 않도록 이유를 한 번 알리고 브라우저 음성으로 읽는다
+    if (lastWarned !== err.message) {
+      lastWarned = err.message;
+      toast(`${err.message} (지금은 브라우저 기본 음성으로 읽어요)`, 8000);
+    }
+    return fallbackSpeak(text, rate, token);
   }
-  return fallbackSpeak(text, rate, token);
+  if (token !== speakToken) return;
+  try {
+    await playUrl(url, rate, token);
+  } catch (err) {
+    if (err.code === 'NotAllowedError' || strict) throw err;
+    return fallbackSpeak(text, rate, token);
+  }
 }
 
 function fallbackSpeak(text, rate, token) {
@@ -66,7 +126,6 @@ export function stopSpeaking() {
   try { audio.pause(); } catch (_) { /* 무시 */ }
   try { window.speechSynthesis?.cancel(); } catch (_) { /* 무시 */ }
 }
-
 /* ---------------- 음성 인식 ---------------- */
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;

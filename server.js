@@ -16,7 +16,8 @@ const { basicFeedback, basicTurn, basicReport } = await import('./lib/basic.js')
 const { fetchSource } = await import('./lib/fetch-source.js');
 const { ttsAvailable, synthesize } = await import('./lib/tts.js');
 const { settingsStatus, verifyOnly, KeyError } = await import('./lib/settings.js');
-const { requestConfig, parseConfigHeader, ollamaReachable } = await import('./lib/providers.js');
+const { requestConfig, parseConfigHeader, ollamaReachable, ttsConfig, ProviderError, OPENAI_VOICES, OPENAI_TTS_MODELS } = await import('./lib/providers.js');
+const { openaiSpeech } = await import('./lib/tts-openai.js');
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC = path.join(ROOT, 'public');
@@ -95,7 +96,7 @@ const routes = {
       ai = false;
       problem = 'ollama_offline';
     }
-    return { ai, problem, ...info, tts: ttsAvailable() };
+    return { ai, problem, ...info, tts: ttsAvailable(), ttsOptions: { piper: ttsAvailable(), voices: OPENAI_VOICES, models: OPENAI_TTS_MODELS } };
   },
 
   'GET /api/sample': async () => structuredClone(SAMPLE),
@@ -166,6 +167,31 @@ const routes = {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
+  // 면접관 목소리: 브라우저 설정에 따라 OpenAI 음성 또는 Piper로 만든다
+  if (url.pathname === '/api/tts' && req.method === 'POST') {
+    const config = parseConfigHeader(req.headers['x-ai-config']);
+    return requestConfig.run(config, async () => {
+      try {
+        const body = await readJson(req);
+        const t = ttsConfig();
+        const engine = body.engine || t.engine || 'piper';
+        if (engine === 'openai') {
+          const mp3 = await openaiSpeech(body.text, { voice: body.voice || t.voice, model: body.model || t.model });
+          return send(res, 200, mp3, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' });
+        }
+        if (engine === 'piper' && ttsAvailable()) {
+          const wav = await synthesize(String(body.text || ''));
+          return send(res, 200, wav, { 'Content-Type': 'audio/wav', 'Cache-Control': 'no-store' });
+        }
+        return send(res, 400, { error: '이 서버에서는 그 음성을 쓸 수 없어요. 브라우저 기본 음성으로 읽을게요.', code: 'tts_unavailable' });
+      } catch (err) {
+        if (err instanceof ProviderError) return send(res, err.code === 'auth' ? 401 : err.code === 'rate' ? 429 : 400, { error: err.message, code: err.code });
+        console.error('[TTS 오류]', err);
+        return send(res, 500, { error: '음성을 만들지 못했어요. 브라우저 기본 음성으로 읽을게요.' });
+      }
+    });
+  }
+
   if (url.pathname === '/api/tts' && req.method === 'GET') {
     if (!ttsAvailable()) return send(res, 501, { error: 'tts_unavailable' });
     try {

@@ -317,6 +317,23 @@ code { font-family: var(--mono); font-size: 0.92em; background: var(--surface-2)
 .suggest-chip:hover { border-color: var(--accent); }
 .suggest-chip.on { border-color: var(--accent); background: var(--accent-soft); }
 
+/* 면접관 목소리 */
+.tts-card { display: grid; gap: 6px; margin-bottom: 16px; }
+.tts-card h2 { margin: 0; }
+.tts-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 8px; margin-top: 8px; }
+.tts-option { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; background: var(--surface); }
+.tts-option span { display: flex; flex-direction: column; min-width: 0; }
+.tts-option small { color: var(--muted); font-size: 12px; }
+.tts-option.on { border-color: var(--accent); background: var(--accent-soft); }
+.tts-option.disabled { opacity: .55; cursor: not-allowed; }
+.tts-option input { margin-top: 3px; }
+.voice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 6px; }
+.voice-chip { display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); min-width: 0; }
+.voice-chip b { font-family: var(--mono); font-size: 13px; }
+.voice-chip span { font-size: 12px; color: var(--muted); }
+.voice-chip:hover { border-color: var(--accent); }
+.voice-chip.on { border-color: var(--accent); background: var(--accent-soft); }
+
 /* ---------- 대화상자, 토스트 ---------- */
 .dialog { border: 0; border-radius: 16px; padding: 22px; max-width: min(440px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgb(0 0 0 / .25); }
 .dialog::backdrop { background: rgb(10 12 20 / .45); }

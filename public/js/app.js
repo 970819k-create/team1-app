@@ -8,7 +8,7 @@ import { renderAnalysis, onAnalysisAction } from './view-analysis.js';
 import { renderPractice, onPracticeAction, leavePractice } from './view-practice.js';
 import { renderInterview, bindInterviewSetup, onInterviewAction, leaveInterview, renderResult, onResultAction, setNavigator, interviewActive } from './view-interview.js';
 import { renderReview, onReviewAction, onReviewSubmit, onReviewChange } from './view-review.js';
-import { renderSettings, onSettingsAction, onSettingsSubmit, setSettingsListener } from './view-settings.js';
+import { renderSettings, onSettingsAction, onSettingsSubmit, setSettingsListener, onSettingsChange } from './view-settings.js';
 
 const view = $('#view');
 let status = { ai: false, tts: false };
@@ -102,6 +102,7 @@ view.addEventListener('submit', (e) => {
 });
 view.addEventListener('change', (e) => {
   if (parse().name === 'review') onReviewChange(e.target, rerender);
+  if (parse().name === 'settings') onSettingsChange(e.target, view);
 });
 
 bindInput(view, { go });

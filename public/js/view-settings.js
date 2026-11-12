@@ -3,6 +3,9 @@
 // 그래서 팀원이 같은 서버에 접속해도 각자 자기 키와 AI를 쓴다.
 import * as store from './store.js';
 import { $, esc, api, toast, confirmBox } from './ui.js';
+import { speak, stopSpeaking } from './speech.js';
+
+let ttsInfo = { piper: false, voices: [], models: [] };
 
 let meta = null; // 서버가 알려 주는 제공자 목록과 서버 기본 키 여부
 let onChanged = () => {};
@@ -29,6 +32,7 @@ export async function renderSettings(view) {
     const res = await fetch('/api/settings');
     if (res.status === 404) throw new Error('서버가 옛 버전으로 켜져 있어요. 서버 창에서 Ctrl + C를 누른 뒤 npm start로 다시 켜고 새로고침해 주세요.');
     meta = await res.json();
+    try { ttsInfo = (await (await fetch('/api/status')).json()).ttsOptions || ttsInfo; } catch (_) { /* 목소리 정보 없음 */ }
   } catch (err) {
     view.innerHTML = `<div class="alert error"><p><b>${esc(err.message || '서버에 연결하지 못했어요.')}</b></p></div>`;
     return;
@@ -50,6 +54,7 @@ function draw(view, notes = {}) {
     <div class="provider-list">
       ${meta.providers.map((p) => card(p, c, cur.id === p.id && ready(p, c), notes[p.id])).join('')}
     </div>
+    ${ttsCard(c)}
     <details class="card notice small">
       <summary>키는 어디에 저장되나요?</summary>
       <ul>
@@ -59,6 +64,47 @@ function draw(view, notes = {}) {
         <li>키를 채팅이나 메신저에 보여 줬다면, 발급한 곳에서 지우고 새로 만드세요.</li>
       </ul>
     </details>`;
+}
+
+const SAMPLE_LINE = "Hello, and thank you for joining us today. Could you briefly introduce yourself?";
+
+function ttsCard(c) {
+  const t = c.tts || {};
+  const engine = t.engine || (ttsInfo.piper ? 'piper' : 'browser');
+  const voice = t.voice || 'alloy';
+  const model = t.model || 'gpt-4o-mini-tts';
+  const openai = meta.providers.find((p) => p.id === 'openai');
+  const hasOpenAiKey = Boolean(c.keys.openai) || openai?.hasKey;
+  const opt = (value, title, desc, disabled = false) => `
+    <label class="tts-option ${engine === value ? 'on' : ''} ${disabled ? 'disabled' : ''}">
+      <input type="radio" name="tts-engine" value="${value}" ${engine === value ? 'checked' : ''} ${disabled ? 'disabled' : ''} data-change="tts-engine">
+      <span><b>${title}</b><small>${desc}</small></span>
+    </label>`;
+  return `
+    <section class="card tts-card" id="tts-card">
+      <h2>면접관 목소리</h2>
+      <p class="small muted">질문 듣기와 실전 면접에서 면접관이 말할 목소리예요. 분석에 쓰는 AI와 따로 고를 수 있어요.</p>
+      <div class="tts-options" role="radiogroup" aria-label="면접관 목소리">
+        ${opt('browser', '브라우저 기본 음성', '무료 · 컴퓨터마다 목소리가 달라요')}
+        ${opt('openai', 'OpenAI 음성', '사람처럼 자연스러움 · 소액 요금 · OpenAI 키 필요')}
+        ${opt('piper', 'Piper 음성', ttsInfo.piper ? '무료 · 서버에 설치된 음성' : '이 서버에는 설치되지 않았어요', !ttsInfo.piper)}
+      </div>
+      ${engine === 'openai' ? `
+        ${hasOpenAiKey ? '' : '<p class="alert info small">위의 <b>OpenAI (ChatGPT)</b> 카드에 키를 먼저 저장해 주세요. 키가 없으면 브라우저 기본 음성으로 읽어요.</p>'}
+        <p class="field-label">목소리</p>
+        <div class="voice-grid" role="radiogroup" aria-label="OpenAI 목소리">
+          ${(ttsInfo.voices || []).map((v) => `<button type="button" class="voice-chip ${v.id === voice ? 'on' : ''}" data-action="tts-voice" data-voice="${esc(v.id)}" aria-pressed="${v.id === voice}"><b>${esc(v.id)}</b><span>${esc(v.note)}</span></button>`).join('')}
+        </div>
+        <label class="field-label" for="tts-model">음성 모델</label>
+        <select id="tts-model" class="input" data-change="tts-model">
+          ${(ttsInfo.models || []).map((m) => `<option value="${esc(m.id)}" ${m.id === model ? 'selected' : ''}>${esc(m.id)} — ${esc(m.note)}</option>`).join('')}
+        </select>
+        <p class="hint">비용 참고: 질문 한 개를 읽는 데 몇 원 정도예요. 같은 문장은 다시 만들지 않아 [질문 다시 듣기]는 추가 요금이 없어요.</p>` : ''}
+      <div class="row gap-s wrap provider-actions">
+        <button type="button" class="btn primary small" data-action="tts-preview">▶ 미리 듣기</button>
+        <span class="small muted" id="tts-status" role="status"></span>
+      </div>
+    </section>`;
 }
 
 function card(p, c, active, note) {
@@ -109,6 +155,23 @@ export async function onSettingsAction(btn, view) {
       input.value = btn.dataset.model;
       btn.closest('.suggest').querySelectorAll('.suggest-chip').forEach((b) => b.classList.toggle('on', b === btn));
       input.focus();
+      return true;
+    }
+    case 'tts-voice':
+      store.setAiConfig((c) => { c.tts = { ...(c.tts || {}), voice: btn.dataset.voice }; });
+      draw(view);
+      speak(SAMPLE_LINE, { strict: true }).catch((err) => ttsStatus(err.message, true));
+      return true;
+    case 'tts-preview': {
+      ttsStatus('불러오는 중…');
+      try {
+        const p = speak(SAMPLE_LINE, { strict: true });
+        ttsStatus('재생 중…');
+        await p;
+        ttsStatus('');
+      } catch (err) {
+        ttsStatus(err.message, true);
+      }
       return true;
     }
     case 'toggle-key': {
@@ -185,4 +248,28 @@ export async function onSettingsSubmit(form, view) {
     if (typed) $(`#key-${id}`).value = typed;
   }
   return true;
+}
+
+function ttsStatus(text, error = false) {
+  const el = $('#tts-status');
+  if (!el) return;
+  el.textContent = text;
+  el.className = `small ${error ? 'err-text' : 'muted'}`;
+}
+
+/** 목소리 선택 변경 (라디오, 모델 선택) */
+export function onSettingsChange(el, view) {
+  const kind = el.dataset.change;
+  if (kind === 'tts-engine') {
+    stopSpeaking();
+    store.setAiConfig((c) => { c.tts = { ...(c.tts || {}), engine: el.value }; });
+    draw(view);
+    toast(el.value === 'openai' ? '면접관 목소리를 OpenAI 음성으로 바꿨어요. [미리 듣기]로 확인해 보세요.' : '면접관 목소리를 바꿨어요.');
+    return true;
+  }
+  if (kind === 'tts-model') {
+    store.setAiConfig((c) => { c.tts = { ...(c.tts || {}), model: el.value }; });
+    return true;
+  }
+  return false;
 }

@@ -137,6 +137,17 @@ test('키 정리: 보이지 않는 글자는 지우고, 한글이 섞이면 이�
   assert.match((await res.json()).error, /한글/);
 });
 
+test('면접관 목소리: OpenAI 키가 없으면 이유를 알리고, 선택지 목록을 제공', async () => {
+  const st = await (await fetch(BASE + '/api/status')).json();
+  assert.ok(st.ttsOptions.voices.some((v) => v.id === 'alloy'));
+  assert.ok(st.ttsOptions.models.some((m) => m.id === 'gpt-4o-mini-tts'));
+  const r1 = await post('/api/tts', { text: 'Hello', engine: 'openai' });
+  assert.equal(r1.status, 400);
+  assert.equal((await r1.json()).code, 'tts_no_key');
+  const r2 = await post('/api/tts', { text: 'Hello', engine: 'piper' });
+  assert.equal((await r2.json()).code, 'tts_unavailable');
+});
+
 test('옛 서버 안내: 없는 API는 다시 켜라고 알림', async () => {
   const r = await (await fetch(BASE + '/api/nope')).json();
   assert.equal(r.code, 'unknown_api');

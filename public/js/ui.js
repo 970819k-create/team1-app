@@ -48,6 +48,22 @@ function aiHeader() {
   return { 'X-AI-Config': btoa(bin) };
 }
 
+/** 음성 파일 요청 (브라우저 AI 설정을 함께 보냄). 실패하면 이유가 담긴 Error */
+export async function apiAudio(path, body) {
+  let res;
+  try {
+    res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...aiHeader() }, body: JSON.stringify(body) });
+  } catch (_) {
+    throw Object.assign(new Error('앱 서버에 연결하지 못했어요.'), { code: 'network' });
+  }
+  if (!res.ok) {
+    let data = {};
+    try { data = await res.json(); } catch (_) { /* 무시 */ }
+    throw Object.assign(new Error(data.error || `음성 요청 실패 (${res.status})`), { code: data.code || res.status });
+  }
+  return res.blob();
+}
+
 export async function api(path, body) {
   let res;
   let extra = {};
