@@ -11,7 +11,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test",
-    "render:showreel": "node tools/render-showreel.mjs"
+    "render:showreel": "node tools/render-showreel.mjs",
+    "render:juicy": "node tools/render-showreel.mjs --film juicy"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",

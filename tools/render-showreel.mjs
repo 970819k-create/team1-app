@@ -1,6 +1,7 @@
 // 깜자 쇼릴을 MP4로 뽑는다. 웹앱이 쓰는 public/motion/kkamja-showreel.js를 그대로 프레임마다 찍는다.
 //
 //   node tools/render-showreel.mjs                       → public/motion/kkamja-showreel.mp4 (1920×1080, 30fps)
+//   node tools/render-showreel.mjs --film juicy           → public/motion/juicy/juicy.mp4 (감귤 15초)
 //   node tools/render-showreel.mjs --out reel.mp4 --no-hud --no-sound --shutter 1 --workers 2
 //
 // 필요한 것: ffmpeg, Playwright (npx playwright install chromium)
@@ -18,7 +19,10 @@ const PUBLIC = path.join(ROOT, 'public');
 const args = process.argv.slice(2);
 const opt = (name, def) => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : def; };
 const flag = name => args.includes(`--${name}`);
-const OUT = path.resolve(opt('out', path.join(PUBLIC, 'motion', 'kkamja-showreel.mp4')));
+const FILM = opt('film', 'kkamja'); // kkamja | juicy
+const DEFAULT_OUT = { kkamja: 'kkamja-showreel.mp4', juicy: 'juicy/juicy.mp4' };
+if (!DEFAULT_OUT[FILM]) { console.error(`--film은 ${Object.keys(DEFAULT_OUT).join(', ')} 중 하나예요.`); process.exit(1); }
+const OUT = path.resolve(opt('out', path.join(PUBLIC, 'motion', DEFAULT_OUT[FILM])));
 const FPS = 30, SHUTTER = Math.max(1, Number(opt('shutter', 4)));
 const WORKERS = Math.max(1, Number(opt('workers', Math.min(4, Math.max(1, os.cpus().length - 1)))));
 const SCALE = Number(opt('scale', 1)); // 0.5 → 960×540 빠른 확인용
@@ -83,6 +87,12 @@ function synthSfx(file, duration, OFF = 0) { // OFF: 영상이 원래 타임라�
   [8.82, 8.88, 8.94, 9.0, 9.16, 9.22].forEach((t, i) => add(t, knock(900 + i * 50, 40), 0.15, 0.07, 0.3));
   // 8) 엔드 카드 종소리
   [523.25, 659.25, 783.99].forEach((f, i) => add(13.2 + i * 0.06, t => Math.sin(2 * Math.PI * f * t) * Math.exp(-2.2 * t) * (1 - Math.exp(-80 * t)), 2.2, 0.12));
+  finishWav(file, L, Rr, SR);
+}
+
+// 한 방의 잔향을 입히고 −8 dBFS 근처로 맞춰 16비트 스테레오 WAV로 저장
+function finishWav(file, L, Rr, SR) {
+  const N = L.length;
   // 한 방의 잔향 (작은 방, 피드백 지연선 몇 개)
   const rev = (buf, taps) => { const out = Float32Array.from(buf); for (const [ms, g] of taps) { const d = Math.floor(ms * SR / 1000); for (let i = d; i < N; i++) out[i] += out[i - d] * g; } return out; };
   const Lw = rev(L, [[29, 0.22], [37, 0.18], [53, 0.12]]), Rw = rev(Rr, [[31, 0.22], [41, 0.18], [59, 0.12]]);
@@ -96,19 +106,64 @@ function synthSfx(file, duration, OFF = 0) { // OFF: 영상이 원래 타임라�
   fs.writeFileSync(file, buf);
 }
 
+// ───────── 효과음 목록 합성: 영상 모듈이 SFX = [{ t, kind, len, gain, pan, pan1, pitch }]를 내보내면 이걸 쓴다 ─────────
+function synthEvents(file, duration, events) {
+  const SR = 48000, N = Math.ceil(duration * SR);
+  const L = new Float32Array(N), Rr = new Float32Array(N);
+  let seed = 13; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
+  const put = (t0, len, gain, panAt, fn) => {
+    const s0 = Math.floor(t0 * SR), n = Math.floor(len * SR);
+    for (let i = 0; i < n && s0 + i < N; i++) {
+      const tt = i / SR, v = fn(tt) * gain, p = panAt(tt / len);
+      L[s0 + i] += v * Math.cos((p + 1) * Math.PI / 4); Rr[s0 + i] += v * Math.sin((p + 1) * Math.PI / 4);
+    }
+  };
+  // 걸러낸 잡음 (f: 시간 → 중심 주파수)
+  const noise = (fAt, q = 0.15) => { let y1 = 0, y2 = 0; return t => { const w = 2 * Math.PI * fAt(t) / SR, x = rnd(); y1 += w * (x - y1 - q * y2); y2 += w * y1; return y2; }; };
+  for (const e of events) {
+    const len = e.len || 1, g = e.gain ?? 0.5, k = e.pitch || 1;
+    const panAt = u => lerpN(e.pan || 0, e.pan1 ?? (e.pan || 0), u);
+    if (e.kind === 'roll') { // 데굴데굴: 낮게 웅웅거리는 잡음 + 굴러가며 생기는 작은 떨림
+      const n = noise(() => 180, 0.3);
+      put(e.t, len, g, panAt, t => n(t) * 1.6 * (0.6 + 0.4 * Math.sin(2 * Math.PI * (9 - 5 * t / len) * t)) * Math.min(1, t * 6) * Math.min(1, (len - t) * 3));
+    } else if (e.kind === 'bump') { // 통: 부드러운 쿵
+      put(e.t, 0.45, g, panAt, t => Math.sin(2 * Math.PI * (95 + 90 * Math.exp(-35 * t)) * t) * Math.exp(-10 * t) + 0.2 * rnd() * Math.exp(-60 * t));
+    } else if (e.kind === 'pop') { // 펑: 낮게 떨어지는 음 + 터지는 잡음 + 물방울 '뽁'
+      put(e.t, 0.9, g, panAt, t => 0.9 * Math.sin(2 * Math.PI * (60 + 260 * Math.exp(-18 * t)) * t) * Math.exp(-5 * t) + 0.6 * rnd() * Math.exp(-25 * t)
+        + 0.5 * Math.sin(2 * Math.PI * (500 + 1400 * Math.min(1, t * 12)) * t) * Math.exp(-14 * t));
+    } else if (e.kind === 'splash') { // 촤아악: 높은 잡음이 천천히 잦아듦
+      const n = noise(t => 2600 - 1400 * t / len, 0.5);
+      put(e.t, len, g, u => (rnd() * 0.3), t => n(t) * 2.4 * Math.min(1, t * 40) * Math.exp(-1.6 * t));
+    } else if (e.kind === 'whoosh') { // 쏴아: 퍼지는 물결 (낮은 → 높은 주파수)
+      const n = noise(t => 300 + 2200 * Math.pow(t / len, 1.4), 0.2);
+      put(e.t, len, g, panAt, t => n(t) * 2.4 * Math.sin(Math.PI * Math.min(1, t / len)) ** 2);
+    } else if (e.kind === 'boing') { // 뿅: 위로 휘는 음
+      put(e.t, 0.45, g, panAt, t => Math.sin(2 * Math.PI * k * (380 * t + 900 * t * t)) * Math.exp(-7 * t) * Math.min(1, t * 200));
+    } else if (e.kind === 'drip') { // 똑: 물방울
+      put(e.t, 0.25, g, panAt, t => Math.sin(2 * Math.PI * k * (700 * t + 2600 * t * t)) * Math.exp(-22 * t));
+    } else if (e.kind === 'chime') { // 띵: 밝은 화음
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => put(e.t + i * 0.05, 2.2, g * 0.35, panAt, t => Math.sin(2 * Math.PI * f * k * t) * Math.exp(-2.4 * t) * (1 - Math.exp(-90 * t))));
+    } else if (e.kind === 'fizz') { // 치익: 탄산 기포가 톡톡 터지는 소리
+      put(e.t, len, g, () => rnd() * 0.8, t => (Math.abs(rnd()) > 0.993 ? rnd() * 1.5 : 0) * Math.min(1, t * 4) * Math.min(1, (len - t) * 2));
+    }
+  }
+  finishWav(file, L, Rr, SR);
+}
+const lerpN = (a, b, k) => a + (b - a) * k;
+
 // ───────── 렌더 ─────────
 const { chromium } = loadPlaywright();
 const srv = await serve();
 const base = `http://127.0.0.1:${srv.address().port}`;
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kkamja-reel-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `${FILM}-reel-`));
 const W = Math.round(1920 * SCALE), H = Math.round(1080 * SCALE);
-const url = `${base}/motion/preview.html?bare&assets=../images/${flag('no-hud') ? '&hud=0' : ''}`;
+const url = `${base}/motion/preview.html?bare&film=${FILM}&assets=../images/${flag('no-hud') ? '&hud=0' : ''}`;
 
 const browser = await chromium.launch();
 const probe = await browser.newPage();
 await probe.goto(url);
 await probe.waitForFunction(() => window.__ready);
-const [DURATION, START] = await probe.evaluate(() => [window.__duration, window.__start || 0]);
+const [DURATION, START, SFX] = await probe.evaluate(() => [window.__duration, window.__start || 0, window.__sfx]);
 await probe.close();
 const frames = Math.round(DURATION * FPS);
 const total = frames * SHUTTER;
@@ -135,7 +190,7 @@ srv.close();
 
 const vf = SHUTTER > 1 ? `tmix=frames=${SHUTTER},select='eq(mod(n\\,${SHUTTER})\\,${SHUTTER - 1})',setpts=N/${FPS}/TB,format=yuv420p` : 'format=yuv420p';
 const ff = ['-y', '-loglevel', 'error', '-framerate', String(FPS * SHUTTER), '-i', path.join(tmp, '%06d.jpg')];
-if (!flag('no-sound')) { const wav = path.join(tmp, 'sfx.wav'); synthSfx(wav, DURATION, START); ff.push('-i', wav, '-c:a', 'aac', '-b:a', '192k', '-shortest'); }
+if (!flag('no-sound')) { const wav = path.join(tmp, 'sfx.wav'); SFX ? synthEvents(wav, DURATION, SFX) : synthSfx(wav, DURATION, START); ff.push('-i', wav, '-c:a', 'aac', '-b:a', '192k', '-shortest'); }
 ff.push('-vf', vf, '-r', String(FPS), '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-movflags', '+faststart', OUT);
 const r = spawnSync('ffmpeg', ff, { stdio: 'inherit' });
 fs.rmSync(tmp, { recursive: true, force: true });

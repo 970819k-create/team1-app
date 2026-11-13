@@ -53,6 +53,16 @@ test('깜자 쇼릴: 모듈·미리보기·영상 제공, 12초 안에 비트가
   BEATS.forEach((b, i) => assert.ok(b.t >= (BEATS[i - 1]?.t ?? 0) && b.t < DURATION, b.name));
 });
 
+test('쥬씨 감귤: 모듈·영상 제공, 15초, 효과음 목록이 영상 안에', async () => {
+  assert.equal(spawnSync(process.execPath, ['--check', 'public/motion/juicy/juicy.js'], { cwd: ROOT }).status, 0);
+  assert.equal((await fetch(BASE + '/motion/juicy/juicy.js')).status, 200);
+  assert.equal((await fetch(BASE + '/motion/juicy/juicy.mp4')).headers.get('content-type'), 'video/mp4');
+  const { DURATION, BEATS, SFX } = await import('../public/motion/juicy/juicy.js');
+  assert.equal(DURATION, 15);
+  BEATS.forEach((b, i) => assert.ok(b.t >= (BEATS[i - 1]?.t ?? 0) && b.t < DURATION, b.name));
+  SFX.forEach((e) => assert.ok(e.t >= 0 && e.t + (e.len || 0) <= DURATION + 0.01, e.kind));
+});
+
 test('폴더 밖 파일은 열 수 없음', async () => {
   const res = await fetch(BASE + '/..%2fserver.js');
   assert.notEqual(await res.text().then((t) => t.includes('process.loadEnvFile')), true);

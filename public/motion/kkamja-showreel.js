@@ -16,6 +16,7 @@
 export const START = 3;
 const SRC_END = 15;
 export const DURATION = SRC_END - START; // 12초
+export const TITLE = '깜자 쇼릴 · 12초';
 export const FPS = 30;
 const SRC_SAY = 8.75;
 export const SAY_AT = SRC_SAY - START; // 깜자가 "easy 면접"이라고 말하는 순간 (5.75초)
@@ -604,3 +605,5 @@ if (typeof customElements !== 'undefined' && !customElements.get('kkamja-showree
     seek(t) { this.reel && this.reel.seek(t); }
   });
 }
+
+export const createReel = createKkamjaShowreel;

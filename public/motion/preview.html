@@ -71,16 +71,24 @@
   </div>
 </main>
 <script type="module">
-  const MOD = './kkamja-showreel.js';
-  const { createKkamjaShowreel, BEATS, DURATION, FPS, START } = await import(MOD + '?v=' + Date.now());
+  // ?film=juicy 처럼 고르면 다른 영상도 같은 화면에서 본다
+  const FILMS = { kkamja: './kkamja-showreel.js', juicy: './juicy/juicy.js' };
   const q = new URLSearchParams(location.search);
+  const MOD = FILMS[q.get('film')] || FILMS.kkamja;
+  const film = await import(MOD + '?v=' + Date.now());
+  const { BEATS, DURATION, FPS, START = 0, SAY_AT } = film;
+  const createReel = film.createReel || film.createKkamjaShowreel;
+  if (film.TITLE) { document.querySelector('h1').textContent = film.TITLE; document.title = film.TITLE + ' 미리보기'; }
+  document.getElementById('scrub').max = DURATION;
+  if (SAY_AT === undefined) document.getElementById('voice').closest('label').hidden = true;
+  if (!film.createKkamjaShowreel) document.getElementById('hud').closest('label').hidden = true;
   const bare = q.has('bare');
   if (bare) document.body.classList.add('bare');
   const $ = id => document.getElementById(id);
   const hudOn = q.get('hud') !== '0';
   $('hud').checked = hudOn;
 
-  const reel = createKkamjaShowreel($('player'), {
+  const reel = createReel($('player'), {
     hud: hudOn,
     assetBase: q.get('assets') || '../images/',
     loop: !bare,
@@ -91,6 +99,7 @@
   window.__seek = t => reel.seek(t);
   window.__duration = DURATION;
   window.__start = START;
+  window.__sfx = film.SFX || null;
   window.__ready = reel.ready;
   if (bare) { await reel.ready; reel.seek(Number(q.get('t')) || 0); }
   else {

@@ -103,3 +103,39 @@ npm i -D playwright && npx playwright install chromium
 
 한 프레임을 4장으로 나눠 찍고 평균을 내서 모션 블러를 만들어요 (1080p 기준 4코어에서 약 1분 40초).
 효과음은 스크립트가 직접 합성해서, 저작권 걱정 없이 쓸 수 있어요.
+
+---
+
+# 쥬씨~ 감귤 (15초 모션 그래픽)
+
+물방울 맺힌 감귤이 통통 튀며 굴러와 화면 중앙에서 슬로모션으로 **펑** 터지고,
+주황 과즙이 화면을 덮은 뒤 젤리 같은 입체 글씨 **"쥬씨~"** 와 **JUICY~** 가 튀어나와요.
+
+| 파일 | 무엇 |
+|---|---|
+| `juicy/juicy.js` | 모션 본체 (캔버스). 의존성 없는 ES 모듈 |
+| `juicy/juicy.mp4` | 1920×1080, 30fps, 효과음 포함 |
+
+- 미리보기: **http://localhost:3000/motion/preview.html?film=juicy**
+- MP4 다시 뽑기: `npm run render:juicy`
+- 웹앱에 넣기:
+
+```js
+import { createJuicy } from '/motion/juicy/juicy.js';
+const reel = createJuicy(document.querySelector('#juicy'), { autoplay: true, loop: true });
+```
+
+| 시간 | 비트 | 코드에서 찾을 곳 |
+|---|---|---|
+| 0–0.25s | 민트·크림 파스텔 스튜디오 (정적) | `drawBackground()` |
+| 0.25–3.05s | 오른쪽 뒤편에서 떨어져 통통 6번 튀며 다가옴 (튈 때마다 물방울) | `HOPS`, `HITS`, `tangerine()` |
+| 3.05–4.5s | 데굴데굴 굴러와 중앙에 멈춤 (원근감, 3바퀴) | `progress()` |
+| 4.6–5.0s | 부르르 떨며 부풀기 | `inflate` |
+| 5.0–8.2s | 펑! 0.18배속 슬로모션: 과즙 덩어리, 줄기, 방울, 알갱이, 껍질, 비타민 반짝이 | `physTime()`, `SLOW`, `DROPS`, `ARMS` |
+| 9.0–10.0s | 주황 과즙이 퍼져 화면을 덮고 파동 링 | `// ── 3.` |
+| 10.0–11.2s | "쥬씨~" 한 글자씩 통통 | `makeGlyph()`, `// ── 4.` |
+| 11.2–15s | JUICY~, 글자에서 떨어지는 물방울, 탄산 거품 | `DRIPS`, `BUBBLES` |
+
+- 효과음은 `SFX` 목록(굴러가는 소리, 통, 펑, 촤아악, 쏴아, 뿅, 띵, 치익, 똑)을 렌더러가 합성해요. 시간만 바꾸면 소리도 따라와요.
+- 글꼴은 Google Fonts의 **Jua**(무료, OFL)예요.
+- 실사 3D가 아니라 코드로 그린 2D 모션 그래픽이에요. 실사 느낌이 필요하면 이 영상을 콘티(애니매틱)로 쓰고, 원래 프롬프트로 AI 영상 툴에서 컷별로 뽑아 타이밍을 맞추면 돼요.
